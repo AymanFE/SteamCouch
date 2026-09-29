@@ -1,0 +1,8 @@
+/build/
+/dist/
+/data/
+/tools/
+*.user
+*.suo
+*.pdb
+.vs/
