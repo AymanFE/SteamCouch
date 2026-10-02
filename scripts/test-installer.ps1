@@ -18,6 +18,7 @@ try {
  $settings=Join-Path $target 'data\settings.json';Set-Content -LiteralPath $settings '{"Startup":false,"CecEnabled":false,"CecHdmiPort":4}'
  $hash=(Get-FileHash -LiteralPath $settings -Algorithm SHA256).Hash
  $server=Start-Process -FilePath (Join-Path $target 'tools\adb\adb.exe') -ArgumentList '-P 5039 start-server' -WindowStyle Hidden -PassThru
+ if(!$server.WaitForExit(10000)){throw 'TV helper startup timed out'}
  if($server.ExitCode -ne 0){throw 'Could not start private TV helper for upgrade test'}
  $p=Start-Process -FilePath $installer -ArgumentList $args -WindowStyle Hidden -PassThru -Wait
  if($p.ExitCode -ne 0 -or (Get-FileHash -LiteralPath $settings -Algorithm SHA256).Hash -ne $hash){throw 'Reinstall changed preferences or failed'}
