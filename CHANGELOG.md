@@ -1,4 +1,12 @@
-﻿# Changelog
+# Changelog
+
+## 1.5.0
+
+- Added a controller-operated quick menu on the session TV for volume, mute, audio output, HDR, resolution, refresh rate, Windows VRR assistance and desktop return.
+- Added View/Select + Y/A/B/X menu bindings and an optional View/Select + Xbox TV/desktop toggle on compatible drivers.
+- Added 20-second display-change confirmation with a background rollback watchdog and persistent interrupted-change recovery.
+- Added TV HDR and Windows VRR preferences to settings and display profiles, restoring previous preferences when returning to desktop.
+- Kept the light-blue theme and rendered the menu at TV-relative sizes with crisp text.
 
 ## 1.4.0 — Couch controls and easier setup
 

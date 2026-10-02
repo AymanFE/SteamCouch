@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -21,7 +21,7 @@ public class Settings {
  public bool KeepOthers = true, LaunchSteam = true, Startup = false;
  public bool DisableControllerGameBar = false;
  public bool ControllerShortcut=false,KeepAwake=false,SetupCompleted=false,CheckUpdates=true,AutoUpdate=false;
- public int ControllerMask=0x330,ControllerHoldSeconds=2;
+ public int ControllerMask=0x330,ControllerHoldSeconds=2; public int MenuMask=0x8020;public bool QuickMenu=true,TvVrr=false;public string TvHdr="Keep";
  public int TimeoutSeconds = 30;
  public uint Modifiers = 3;
  public int Key = (int)Keys.F12;
@@ -33,7 +33,7 @@ public class Snapshot {
  public List<Row> Monitors = new List<Row>();
  public string[] Audio = new string[3];
  public string DisplayFile;
- public string Launcher;
+ public string Launcher;public string SessionMonitorId;
 }
 public static class Storage {
  public static string Root = AppDomain.CurrentDomain.BaseDirectory;
@@ -141,7 +141,7 @@ public class Engine {
   if(s.LaunchSteam && s.Launcher=="Steam" && !File.Exists(s.SteamPath)) throw new InvalidOperationException("Select the Steam executable in Settings.");
   var beforeAudio=d.Audio(); var defaults=Defaults(beforeAudio);
   if(defaults.Any(string.IsNullOrEmpty)) throw new InvalidOperationException("Could not identify all current playback defaults; no settings were changed.");
-  var snapshot=new Snapshot{Monitors=monitors,Audio=defaults,DisplayFile=Storage.PathOf("desktop.cfg"),Launcher=s.LaunchSteam?s.Launcher:"Steam"};
+  var snapshot=new Snapshot{Monitors=monitors,Audio=defaults,DisplayFile=Storage.PathOf("desktop.cfg"),Launcher=s.LaunchSteam?s.Launcher:"Steam",SessionMonitorId=s.MonitorId};
   d.SaveDisplays(snapshot.DisplayFile); Storage.Save("restore.json",snapshot);
   try {
    Status("Connecting TV..."); d.Enable(s.MonitorId);
@@ -167,6 +167,7 @@ public class Engine {
    },s.TimeoutSeconds,"TV audio was unavailable or ambiguous. Enable the TV in Windows, then refresh Settings and select its audio output.");
    for(int role=0;role<3;role++) d.SetAudio(audioId,role);
    Wait(()=>Defaults(d.Audio()).All(id=>id==audioId),s.TimeoutSeconds,"Windows did not switch playback audio to the TV.");
+      if(d is Devices&&(s.TvHdr=="On"||s.TvHdr=="Off"||s.TvVrr)){var videoTarget=VideoNative.Target(d.Monitors().Single(r=>Id(r)==s.MonitorId).Get("Name"));if(s.TvHdr=="On"||s.TvHdr=="Off"){VideoSession.RememberHdr(videoTarget);if(VideoNative.Hdr(videoTarget).Enabled!=(s.TvHdr=="On"))VideoNative.Hdr(videoTarget,s.TvHdr=="On");}if(s.TvVrr)VideoSession.SetVrr(true);}
    if(s.LaunchSteam&&s.Launcher=="Xbox"){Status("Opening Xbox mode on your TV...");var tv=d.Monitors().Single(r=>Id(r)==s.MonitorId);d.EnterXbox(tv.Get("Name"),s.TimeoutSeconds);}
    if(s.LaunchSteam&&s.Launcher=="Steam") {
     Status("Opening Steam Big Picture..."); d.Steam(s.SteamPath);
@@ -179,6 +180,7 @@ public class Engine {
    throw new InvalidOperationException(error.Message+"\nYour previous setup was restored.",error);
   }
  }
+  public string SessionDisplay(){if(!Active)throw new InvalidOperationException("Enter TV mode first.");var saved=Storage.Read<Snapshot>("restore.json");var monitor=d.Monitors().FirstOrDefault(r=>Id(r)==saved.SessionMonitorId&&IsOn(r));if(monitor==null)throw new InvalidOperationException("The session TV is unavailable. Return to desktop and enter TV mode again.");return monitor.Get("Name");}
  public void Restore(int timeout) {
   var errors=new List<string>();
   Snapshot snapshot=Active?Storage.Read<Snapshot>("restore.json"):null;bool xbox=snapshot!=null&&snapshot.Launcher=="Xbox";Status(xbox?"Exiting Xbox mode...":"Exiting Steam Big Picture...");
@@ -188,6 +190,7 @@ public class Engine {
    Status("Desktop mode is active. Steam Big Picture is closed."); return;
   }
 
+  if(d is Devices)try{VideoSession.Restore();}catch(Exception e){errors.Add(e.Message);}
   Status("Restoring desktop displays...");
   try {
    d.LoadDisplays(snapshot.DisplayFile);
@@ -237,9 +240,9 @@ public static class Program {
   bool created; using(var mutex=new Mutex(true,(args.Contains("--ui-test")||args.Contains("--self-test")?@"Local\SteamCouch.Preview":@"Local\TVLounge.SingleInstance"),out created)) {
    if(!created) { if(args.Contains("--tray"))return 0; MessageBox.Show("SteamCouch is already running. Open Settings from its system tray icon.","SteamCouch"); return 1; }
    try {
-    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run(); return 0; }
+    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run(); return 0; }
     if(args.Contains("--ui-test")) { string oldData=Storage.Data; string preview=Path.Combine(oldData,"ui-preview"); Directory.CreateDirectory(preview); foreach(string name in new[]{"settings.json","restore.json"}) { string from=Path.Combine(oldData,name),to=Path.Combine(preview,name); if(File.Exists(from))File.Copy(from,to,true); else if(File.Exists(to))File.Delete(to); } Storage.Data=preview; }
-    var d=new Devices();
+    var d=new Devices();if(!args.Contains("--ui-test"))try{VideoSession.RecoverPending();}catch(Exception recovery){Storage.Log("Interrupted video change needs restore: "+recovery.Message);}
     if(args.Contains("--native-validate")) { NativeDisplay.Save(Storage.PathOf("native-validation.json")); return 0; }
     if(args.Contains("--diagnose")) { Storage.Save("diagnostics.json",new{Monitors=d.Monitors(),Audio=d.Audio()}); return 0; }
     var s=File.Exists(Storage.PathOf("settings.json"))?Storage.Read<Settings>("settings.json"):new Settings();

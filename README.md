@@ -1,4 +1,4 @@
-﻿# SteamCouch
+# SteamCouch
 
 <p align="center"><img src="assets/steamcouch.png" width="128" alt="SteamCouch sofa icon"></p>
 
@@ -14,7 +14,7 @@ Steam stays running.
 
 **[Download the latest Windows release](https://github.com/AymanFE/SteamCouch/releases/latest)**
 
-Choose `SteamCouch-v1.4.0-windows-x64.zip` under **Assets**. You do not need the
+Choose `SteamCouch-v1.5.0-windows-x64.zip` under **Assets**. You do not need the
 "Source code" downloads unless you want to build or modify the app.
 
 1. Extract the whole ZIP to a writable folder, such as Documents or a folder of your choice.
@@ -34,7 +34,10 @@ provided alongside the ZIP.
 ## Features
 
 - Choose your TV and playback device, with a four-step setup wizard and optional TV/desktop round-trip test.
-- Toggle TV mode with a customizable controller button combination held for 1–5 seconds.
+- Toggle TV mode with a customizable controller button combination held for 1–5 seconds, including View/Select + Xbox button on compatible drivers.
+- Open a controller-operated TV quick menu with View/Select + Y (or A/B/X): volume, mute, audio output, HDR, resolution/refresh rate, Windows VRR assistance, and desktop return.
+- Confirm HDR and resolution changes within 20 seconds or automatically restore the previous setting. Pending changes recover after a restart.
+- Save TV HDR and Windows VRR preferences in display profiles; restore previous preferences on desktop return.
 - Optionally keep the PC and display awake only during TV mode.
 - Save and switch display/audio/launcher profiles.
 - Check GitHub for updates, install with settings preserved, and optionally update automatically while idle.
@@ -57,13 +60,25 @@ provided alongside the ZIP.
 "Reconnect" means enabling a display that Windows has disconnected in Display
 Settings. The app cannot reconnect an unplugged cable or reliably power on a TV.
 
-SteamCouch changes playback defaults, not microphone settings or volume levels.
+SteamCouch changes playback defaults, not microphone settings. Its TV quick menu also lets you adjust the current playback output volume and mute. Those explicit volume changes remain saved.
 Games with a fixed audio-output preference may need to be set to the Windows
 default output. Running games are not force-closed. If a game or Steam dialog
 prevents Big Picture from exiting, finish it and retry **Restore desktop**.
 
 Tested on one Windows PC with multiple monitors and an HDMI TV; behavior may
 vary by GPU driver, monitor sleep behavior, and Steam configuration.
+
+## TV quick menu
+
+While TV mode is active, hold **View/Select + Y** for about half a second. Use the D-pad or left stick to navigate, **A** to select and **B** to return to the game. On the Volume tile, Left/Right changes volume in 5% steps and X toggles mute. Keyboard arrows, Enter, Escape, mouse clicks and the wheel also work. Settings lets you disable the menu, change its chord to View + A/B/X, or preview it without changing hardware.
+
+The menu opens on the TV saved for the current session. It works best with borderless/windowed games and Steam Big Picture. Opening it takes focus; exclusive-fullscreen games may minimize. SteamCouch does not inject code into games or block controller input from reaching them.
+
+HDR availability is checked for the TV's current connection. Resolution and refresh choices come from the Windows driver, with a 20-second confirmation and automatic rollback. A separate watchdog can revert even if the UI stalls. The original desktop layout and HDR preference are retained for desktop return; a failed recovery keeps its restore file for retry.
+
+**Windows VRR assistance** is the Windows-wide preference for games without native VRR support. It is not a TV-specific G-SYNC/FreeSync switch and does not prove VRR is active. Enable compatible VRR on the TV and in GPU settings too. Restart the game after changing this preference. SteamCouch preserves other GPU preference entries and restores the previous VRR entry on desktop return.
+
+**View/Select + Xbox** can be selected for entering and leaving TV mode. Guide-button detection depends on the controller and Windows driver; Steam and Windows may still respond to that button. View + Menu + LB + RB remains the reliable default fallback. Shortcuts require release before firing again.
 
 ## Troubleshooting
 

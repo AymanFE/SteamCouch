@@ -1,11 +1,13 @@
-﻿# SteamCouch 1.4.0
+# SteamCouch 1.5.0
 
-Use your controller to enter TV mode and return to desktop: enable Controller shortcut in Settings, save, then hold View + Menu + LB + RB for two seconds. The combination and hold duration are configurable. Release before holding again.
+Your TV controls are now available from the controller. Hold View/Select + Y to open the new quick menu, then adjust volume/mute, choose audio output, toggle HDR, select resolution and refresh rate, change Windows VRR assistance, or return to desktop. Change the menu chord to View + A/B/X in Settings.
 
-Optional Keep PC and TV awake takes effect only in TV mode and releases on return to desktop. Profiles save your screen, sound, and gaming launcher choices. A first-run setup wizard guides new users through their setup, with an optional TV/desktop test. Help & updates includes troubleshooting and a report you can review before sharing.
+View/Select + Xbox is an optional TV/desktop toggle on compatible controller drivers; ordinary-button shortcuts remain available when the Guide button is intercepted.
 
-Update checks use this repository's public GitHub releases. Manual installation preserves settings, verifies the download checksum, and retains a backup. Optional automatic installation waits for desktop mode, a closed Big Picture interface, the app in the tray, and input inactivity. Failed installation or startup rolls back the program files.
+TV HDR and Windows VRR preferences can be saved in profiles. Display changes require confirmation within 20 seconds and automatically revert if unconfirmed. HDR/VRR preferences restore on desktop return, with recovery data retained for retries and interrupted changes.
 
-Download SteamCouch-v1.4.0-windows-x64.zip, extract all files together, and open SteamCouch.exe. Keep your existing data folder when updating. New controller/keep-awake/automatic-install preferences are off by default; automatic update checks are on.
+The menu works best in borderless/windowed games and Big Picture. Exclusive-fullscreen games may minimize. Windows VRR assistance is Windows-wide, requires compatible TV/GPU settings, and may require restarting the game. Steam/Windows can still react to the Guide button.
 
-Validation: orchestration and recovery tests; controller hold/rearm and busy suppression; native XInput polling and temporary awake requests; settings bindings and profile isolation; update parsing and protected-path validation; isolated installation and failed-startup rollback with settings preservation; live GitHub checking; all five pages at normal/compact sizes, centered maximized Home, the setup wizard, three real monitor DPI transitions, and simulated 100–300% layouts. The physical controller chord and wizard TV test require a user hardware trial.
+Includes the locally prepared 1.4.0 features: controller toggling, TV-only keep-awake, setup wizard, profiles, troubleshoot reports, and GitHub updates.
+
+Validation: session/recovery tests; controller hold and navigation tests; isolated rollback, confirmation, failure and retry tests; read-only native HDR/display/audio queries; UI previews and 100–300% DPI checks. Physical controller behavior and HDR/VRR in games still need real-world testing.
