@@ -1,26 +1,22 @@
-# SteamCouch 1.2.0
+# SteamCouch 1.3.0
 
-The first public release of SteamCouch: one shortcut to reconnect your TV, switch
-audio, and open Steam Big Picture. Press again to exit Big Picture and restore
-your desktop, while Steam stays running.
+Choose Steam Big Picture or Windows 11 Xbox mode in Settings. SteamCouch enables
+your selected TV, makes it primary, switches playback audio, and launches the
+selected gaming mode. Returning to desktop exits that mode before restoring the
+saved displays and audio.
 
-## Download and run
+Xbox mode requires the Xbox app and Xbox mode enabled in Windows Settings >
+Gaming. Confirm Windows' Win + F11 shortcut works before selecting it in
+SteamCouch. Xbox mode may cover secondary screens, even if they remain connected.
 
-1. Download **SteamCouch-v1.2.0-windows-x64.zip** below.
-2. Extract the whole archive to a writable folder.
-3. Open **SteamCouch.exe**, choose your devices in **TV & audio**, and save.
-4. Activate TV mode from **Home** or press **Ctrl + Alt + F12**. Change the shortcut in **Settings**.
+The launcher choice is saved with the recovery snapshot, so restoration still
+uses the correct mode after an app restart or a settings change. Entry failures
+roll back the saved setup; exit failures still restore displays and audio while
+retaining a retry point. Existing settings default to Steam Big Picture.
 
-Windows 10/11 x64 and .NET Framework 4.8 are required. The build is unsigned.
-The ZIP includes both required NirSoft utilities and their original documentation.
-No installer or developer tools are needed.
+Download SteamCouch-v1.3.0-windows-x64.zip, extract all files together, and open
+SteamCouch.exe. Includes the required NirSoft tools and DPI configuration.
 
-The TV must be powered on and connected. Both extended-desktop and TV-only
-switching have been tested on the original development PC. Different display
-hardware may behave differently; a saved restore point is retained if recovery
-needs another attempt.
-
-Original source code: MIT. Bundled utilities have separate freeware licenses.
-SteamCouch is not affiliated with Valve.
-
-Includes light-blue styling, native per-monitor DPI scaling, a centered maximized Home page, and an immediately applied Start with Windows switch. Startup command launch has been verified; a full Windows sign-in cycle has not been tested.
+Validation: Steam regression tests, Xbox orchestration/recovery tests with fake
+devices, and Settings/layout checks passed. Actual Xbox-mode entry on the
+development PC remains unverified pending Windows' Xbox-mode configuration.

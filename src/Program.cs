@@ -16,6 +16,7 @@ namespace TVLounge {
 public class Settings {
  public string MonitorId = "";
  public string AudioId = "";
+ public string Launcher = "Steam";
  public string SteamPath = @"C:\Program Files (x86)\Steam\steam.exe";
  public bool KeepOthers = true, LaunchSteam = true, Startup = false;
  public int TimeoutSeconds = 30;
@@ -29,6 +30,7 @@ public class Snapshot {
  public List<Row> Monitors = new List<Row>();
  public string[] Audio = new string[3];
  public string DisplayFile;
+ public string Launcher;
 }
 public static class Storage {
  public static string Root = AppDomain.CurrentDomain.BaseDirectory;
@@ -46,6 +48,7 @@ public interface IDevices {
  List<Row> Monitors(); List<Row> Audio();
  void SaveDisplays(string file); void LoadDisplays(string file); void ReconnectDisplays();
  void Enable(string id); void Primary(string id); void Disable(string id); void SetAudio(string id,int role);
+ void ValidateXbox();void EnterXbox(string monitor,int timeout);void ExitXbox(int timeout);
  void Steam(string path); void ExitBigPicture(int timeout); bool PlaceSteam(string monitor); void Pause(int milliseconds);
 }
 public class Devices : IDevices {
@@ -86,6 +89,7 @@ public class Devices : IDevices {
  public void Disable(string id) { Run(display,"/disable "+Quote(id)); }
  public void SetAudio(string id,int role) { Run(audio,"/SetDefault "+Quote(id)+" "+role); }
  public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+ public void ValidateXbox(){XboxClient.Validate();} public void EnterXbox(string monitor,int timeout){XboxClient.Enter(monitor,timeout);} public void ExitXbox(int timeout){XboxClient.Set(false,timeout);}
  public void ExitBigPicture(int timeout) { SteamClient.ExitBigPicture(timeout); }
  public void Steam(string path) { Process.Start(new ProcessStartInfo(path,"steam://open/bigpicture"){UseShellExecute=true}); }
  public bool PlaceSteam(string monitor) { IntPtr previous=Native.SetThreadDpiAwarenessContext(new IntPtr(-2)); try { bool found=false;
@@ -128,10 +132,13 @@ public class Engine {
   var monitors=d.Monitors(); var target=monitors.SingleOrDefault(r=>Id(r)==s.MonitorId);
   if(target==null || string.IsNullOrEmpty(s.MonitorId)) throw new InvalidOperationException("Select an available TV in Settings. Check its cable and power.");
   if(!monitors.Any(IsOn)) throw new InvalidOperationException("No active desktop display detected.");
-  if(s.LaunchSteam && !File.Exists(s.SteamPath)) throw new InvalidOperationException("Select the Steam executable in Settings.");
+  if(s.Launcher!="Steam"&&s.Launcher!="Xbox")throw new InvalidOperationException("Choose Steam Big Picture or Xbox mode in Settings.");
+  if(s.Launcher=="Xbox"&&s.Modifiers==8&&s.Key==(int)Keys.F11)throw new InvalidOperationException("Choose a SteamCouch shortcut other than Xbox mode's Win + F11.");
+  if(s.LaunchSteam&&s.Launcher=="Xbox")d.ValidateXbox();
+  if(s.LaunchSteam && s.Launcher=="Steam" && !File.Exists(s.SteamPath)) throw new InvalidOperationException("Select the Steam executable in Settings.");
   var beforeAudio=d.Audio(); var defaults=Defaults(beforeAudio);
   if(defaults.Any(string.IsNullOrEmpty)) throw new InvalidOperationException("Could not identify all current playback defaults; no settings were changed.");
-  var snapshot=new Snapshot{Monitors=monitors,Audio=defaults,DisplayFile=Storage.PathOf("desktop.cfg")};
+  var snapshot=new Snapshot{Monitors=monitors,Audio=defaults,DisplayFile=Storage.PathOf("desktop.cfg"),Launcher=s.LaunchSteam?s.Launcher:"Steam"};
   d.SaveDisplays(snapshot.DisplayFile); Storage.Save("restore.json",snapshot);
   try {
    Status("Connecting TV..."); d.Enable(s.MonitorId);
@@ -157,7 +164,8 @@ public class Engine {
    },s.TimeoutSeconds,"TV audio was unavailable or ambiguous. Enable the TV in Windows, then refresh Settings and select its audio output.");
    for(int role=0;role<3;role++) d.SetAudio(audioId,role);
    Wait(()=>Defaults(d.Audio()).All(id=>id==audioId),s.TimeoutSeconds,"Windows did not switch playback audio to the TV.");
-   if(s.LaunchSteam) {
+   if(s.LaunchSteam&&s.Launcher=="Xbox"){Status("Opening Xbox mode on your TV...");var tv=d.Monitors().Single(r=>Id(r)==s.MonitorId);d.EnterXbox(tv.Get("Name"),s.TimeoutSeconds);}
+   if(s.LaunchSteam&&s.Launcher=="Steam") {
     Status("Opening Steam Big Picture..."); d.Steam(s.SteamPath);
     Wait(()=> { var tv=d.Monitors().Single(r=>Id(r)==s.MonitorId); if(tv.Get("Primary")!="Yes") d.Primary(s.MonitorId); return d.PlaceSteam(tv.Get("Name")); },s.TimeoutSeconds,"Steam Big Picture did not become ready. Finish any Steam update or sign-in, then try again.");
    }
@@ -170,13 +178,13 @@ public class Engine {
  }
  public void Restore(int timeout) {
   var errors=new List<string>();
-  Status("Exiting Steam Big Picture...");
-  try { d.ExitBigPicture(timeout); } catch(Exception e) { errors.Add(e.Message); }
+  Snapshot snapshot=Active?Storage.Read<Snapshot>("restore.json"):null;bool xbox=snapshot!=null&&snapshot.Launcher=="Xbox";Status(xbox?"Exiting Xbox mode...":"Exiting Steam Big Picture...");
+  try { if(xbox)d.ExitXbox(timeout);else d.ExitBigPicture(timeout); } catch(Exception e) { errors.Add(e.Message); }
   if(!Active) {
    if(errors.Count>0)throw new InvalidOperationException(string.Join("\n",errors));
    Status("Desktop mode is active. Steam Big Picture is closed."); return;
   }
-  var snapshot=Storage.Read<Snapshot>("restore.json");
+
   Status("Restoring desktop displays...");
   try {
    d.LoadDisplays(snapshot.DisplayFile);
@@ -232,6 +240,7 @@ public static class Program {
     if(args.Contains("--native-validate")) { NativeDisplay.Save(Storage.PathOf("native-validation.json")); return 0; }
     if(args.Contains("--diagnose")) { Storage.Save("diagnostics.json",new{Monitors=d.Monitors(),Audio=d.Audio()}); return 0; }
     var s=File.Exists(Storage.PathOf("settings.json"))?Storage.Read<Settings>("settings.json"):new Settings();
+    if(args.Contains("--xbox-mode-test")){bool before=XboxClient.Active;try{XboxClient.Set(true,10);if(!XboxClient.Active)throw new Exception("Xbox did not enter");XboxClient.Set(false,10);File.WriteAllText(Storage.PathOf("xbox-mode-test.txt"),"PASS: actual Xbox-mode entry and exit verified through the Windows gaming-experience API.");}finally{if(XboxClient.Active!=before)XboxClient.Set(before,10);}return 0;}
     if(args.Contains("--startup-sync")){StartupRegistration.Set(s.Startup);return 0;}
     if(args.Contains("--steam-exit-test")) {
      var running=Process.GetProcessesByName("steam"); if(running.Length==0)throw new InvalidOperationException("Start Steam before running this test."); var ids=running.Select(p=>p.Id).ToArray();foreach(var process in running)process.Dispose();
@@ -258,7 +267,7 @@ public static class Program {
  }
 }
 public class FakeDevices : IDevices {
- public List<Row> Displays; public List<Row> Outputs; List<Row> original; public bool FailAudio,FailRestore,NeedsReconnect,FailSteamExit,BigPictureOpen; public int SteamCalls,ExitCalls; public List<string> Events=new List<string>();
+ public List<Row> Displays; public List<Row> Outputs; List<Row> original; public bool XboxOpen,FailXboxExit,FailXboxEnter,XboxUnavailable;public int XboxCalls; public bool FailAudio,FailRestore,NeedsReconnect,FailSteamExit,BigPictureOpen; public int SteamCalls,ExitCalls; public List<string> Events=new List<string>();
  public FakeDevices() {
   Displays=new List<Row>{new Row{{"Monitor ID","desk"},{"Name","desktop"},{"Active","Yes"},{"Primary","Yes"},{"Resolution","1920 X 1080"},{"Left-Top","0, 0"}},new Row{{"Monitor ID","tv"},{"Name","tv"},{"Monitor Name","Beyond TV"},{"Active","No"},{"Primary","No"}}};
   Outputs=new List<Row>{new Row{{"Item ID","speakers"},{"Name","Speakers"},{"Device State","Active"},{"Default","Render"},{"Default Multimedia","Render"},{"Default Communications","Render"}}};
@@ -272,7 +281,9 @@ public class FakeDevices : IDevices {
  public void Primary(string id){foreach(var r in Displays)r["Primary"]=r.Get("Monitor ID")==id?"Yes":"No";}
  public void Disable(string id){Displays.Single(r=>r.Get("Monitor ID")==id)["Active"]="No";}
  public void SetAudio(string id,int role){if(FailAudio && id=="tv-audio")throw new Exception("Simulated audio failure"); foreach(var r in Outputs)r[Engine.Roles[role]]=r.Get("Item ID")==id?"Render":"";}
- public void Steam(string path){if(Displays.Single(r=>r.Get("Monitor ID")=="tv").Get("Primary")!="Yes"||!Engine.Defaults(Audio()).All(x=>x=="tv-audio"))throw new Exception("Steam launched before devices ready"); SteamCalls++;BigPictureOpen=true;} public void ExitBigPicture(int timeout){ExitCalls++;Events.Add("exit-bigpicture");if(FailSteamExit)throw new Exception("Simulated Steam exit failure");BigPictureOpen=false;} public bool PlaceSteam(string monitor){return true;} public void Pause(int milliseconds){}
+ public void ValidateXbox(){if(XboxUnavailable)throw new Exception("Xbox unavailable");}public void EnterXbox(string monitor,int timeout){if(FailXboxEnter)throw new Exception("Xbox entry failed");if(Displays.Single(r=>r.Get("Monitor ID")=="tv").Get("Primary")!="Yes"||!Engine.Defaults(Audio()).All(x=>x=="tv-audio"))throw new Exception("Xbox before devices");XboxCalls++;XboxOpen=true;}public void ExitXbox(int timeout){Events.Add("exit-xbox");if(FailXboxExit)throw new Exception("Xbox exit failed");XboxOpen=false;}
+ public void Steam(string path){if(Displays.Single(r=>r.Get("Monitor ID")=="tv").Get("Primary")!="Yes"||!Engine.Defaults(Audio()).All(x=>x=="tv-audio"))throw new Exception("Steam launched before devices ready"); SteamCalls++;BigPictureOpen=true;}
+ public void ExitBigPicture(int timeout){ExitCalls++;Events.Add("exit-bigpicture");if(FailSteamExit)throw new Exception("Simulated Steam exit failure");BigPictureOpen=false;} public bool PlaceSteam(string monitor){return true;} public void Pause(int milliseconds){}
 }
 public static class SelfTest {
  static void Assert(bool yes,string message){if(!yes)throw new Exception("FAIL: "+message);}
@@ -300,6 +311,16 @@ public static class SelfTest {
    try{ef.Restore(3);}catch{threw=true;}
    Assert(threw&&ef.Active&&Engine.IsOn(exitFailure.Displays[0])&&!Engine.IsOn(exitFailure.Displays[1])&&Engine.Defaults(exitFailure.Audio()).All(x=>x=="speakers"),"Steam exit failure still restores desktop and audio");exitFailure.FailSteamExit=false;ef.Restore(3);Assert(!ef.Active,"Steam exit retry clears recovery point");report.Add("PASS: Steam exit failure cannot prevent display/audio restoration; retry works");
    var alreadyDesktop=new FakeDevices{BigPictureOpen=true};new Engine(alreadyDesktop).Restore(3);Assert(!alreadyDesktop.BigPictureOpen&&!alreadyDesktop.Events.Contains("restore-displays"),"Desktop restore can close leftover Big Picture without touching displays");report.Add("PASS: leftover Big Picture closes without a saved TV session");
+   var xbox=new FakeDevices();var xe=new Engine(xbox);xe.Activate(new Settings{MonitorId="tv",Launcher="Xbox",LaunchSteam=true,SteamPath="missing.exe",TimeoutSeconds=3});
+   Assert(xbox.XboxCalls==1&&xbox.SteamCalls==0&&xbox.XboxOpen,"Xbox launches after TV/audio without requiring Steam");
+   Assert(Storage.Read<Snapshot>("restore.json").Launcher=="Xbox","Xbox launcher persisted in restore point");
+   new Engine(xbox).Restore(3);Assert(!xbox.XboxOpen&&!xe.Active&&xbox.Events.IndexOf("exit-xbox")<xbox.Events.IndexOf("restore-displays"),"Xbox exits before restoring displays after restart");
+   report.Add("PASS: Xbox launcher selection, device ordering, persisted restart recovery");
+   var xboxFail=new FakeDevices{FailXboxExit=true};var xf=new Engine(xboxFail);xf.Activate(new Settings{MonitorId="tv",Launcher="Xbox",LaunchSteam=true,TimeoutSeconds=3});
+   try{xf.Restore(3);}catch{}Assert(xf.Active&&Engine.Defaults(xboxFail.Audio()).All(x=>x=="speakers")&&!Engine.IsOn(xboxFail.Displays[1]),"Xbox exit failure still restores devices");
+   xboxFail.FailXboxExit=false;new Engine(xboxFail).Restore(3);Assert(!xf.Active&&!xboxFail.XboxOpen,"Xbox retry recovers");report.Add("PASS: Xbox exit failure restores devices and retains retry");
+   var noXbox=new FakeDevices{XboxUnavailable=true};var nx=new Engine(noXbox);threw=false;try{nx.Activate(new Settings{MonitorId="tv",Launcher="Xbox",TimeoutSeconds=3});}catch{threw=true;}Assert(threw&&!nx.Active&&!Engine.IsOn(noXbox.Displays[1]),"Unsupported Xbox rejected before hardware changes");report.Add("PASS: unavailable Xbox rejected without display/audio changes");
+   var entryXbox=new FakeDevices{FailXboxEnter=true};var ex=new Engine(entryXbox);threw=false;try{ex.Activate(new Settings{MonitorId="tv",Launcher="Xbox",TimeoutSeconds=3});}catch{threw=true;}Assert(threw&&!ex.Active&&!Engine.IsOn(entryXbox.Displays[1])&&Engine.Defaults(entryXbox.Audio()).All(x=>x=="speakers"),"Xbox entry failure rolls back");report.Add("PASS: Xbox entry failure rolls back displays and audio");
    Assert(Devices.Quote(@"C:\folder with spaces\")=="\"C:\\folder with spaces\\\\\"","Windows trailing slash quoting"); report.Add("PASS: argument quoting");
   } finally { Storage.Data=data; File.WriteAllLines(Storage.PathOf("self-test.txt"),report); }
  }

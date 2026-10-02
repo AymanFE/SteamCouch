@@ -83,7 +83,7 @@ internal class NavButton : Button {
 public class MainForm : Form {
  Settings settings; Engine engine; IDevices devices; bool busy,quitting,uiTest,layoutReady; 
  NotifyIcon tray; Icon appIcon; Image brandImage;
- DarkCombo monitors=new DarkCombo(),audio=new DarkCombo(),key=new DarkCombo();
+ DarkCombo monitors=new DarkCombo(),audio=new DarkCombo(),key=new DarkCombo(),launcher=new DarkCombo();
  ModernSwitch keep=new ModernSwitch(),steam=new ModernSwitch(),startup=new ModernSwitch();
  KeyChip ctrl=new KeyChip(),alt=new KeyChip(),shift=new KeyChip(),win=new KeyChip();
  TextBox steamPath=new TextBox(); NumberStepper timeout=new NumberStepper();
@@ -127,7 +127,7 @@ public class MainForm : Form {
   string[] names={"Home","TV & audio","Settings"};string[] glyphs={"\uE80F","\uE7F4","\uE713"};
   for(int i=0;i<names.Length;i++){int page=i;var nav=new NavButton{Text=names[i],Glyph=glyphs[i],BackColor=sidebar.BackColor};Theme.Place(sidebar,nav,10,99+i*52,192,44);nav.Click+=delegate{SelectPage(page);};navigation.Add(nav);}
   var sideNote=Theme.Label("DESKTOP TO COUCH",8,true,Theme.Muted);Theme.Place(sidebar,sideNote,24,645,180,20);sideNote.Anchor=AnchorStyles.Left|AnchorStyles.Bottom;
-  var sideInfo=Theme.Label("One shortcut. All set.\nSteamCouch  1.2",9,false,Theme.Muted);Theme.Place(sidebar,sideInfo,24,676,180,48);sideInfo.Anchor=AnchorStyles.Left|AnchorStyles.Bottom;
+  var sideInfo=Theme.Label("One shortcut. All set.\nSteamCouch  1.3",9,false,Theme.Muted);Theme.Place(sidebar,sideInfo,24,676,180,48);sideInfo.Anchor=AnchorStyles.Left|AnchorStyles.Bottom;
   var main=new Panel{Dock=DockStyle.Fill,BackColor=Theme.Background};Controls.Add(main);Controls.Add(sidebar);
   header.Size=new Size(888,92);header.Dock=DockStyle.Top;header.BackColor=Theme.Background;
   Theme.Place(header,pageTitle,32,20,800,48);pageTitle.Anchor=AnchorStyles.Left|AnchorStyles.Top|AnchorStyles.Right;
@@ -148,7 +148,7 @@ public class MainForm : Form {
   Theme.Place(overview,Theme.Label("Your couch setup",12,true,Theme.Text),24,19,650,28);
   Theme.Place(overview,Theme.Label("DISPLAY",8,true,Theme.Accent),24,62,115,24);Theme.Place(overview,tvSummary,148,60,632,29);tvSummary.Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top;
   Theme.Place(overview,Theme.Label("AUDIO",8,true,Theme.Accent),24,107,115,24);Theme.Place(overview,audioSummary,148,103,632,29);audioSummary.Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top;
-  Theme.Place(overview,Theme.Label("STEAM",8,true,Theme.Accent),24,151,115,24);Theme.Place(overview,steamSummary,148,147,632,43);steamSummary.Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top;
+  Theme.Place(overview,Theme.Label("GAMING",8,true,Theme.Accent),24,151,115,24);Theme.Place(overview,steamSummary,148,147,632,43);steamSummary.Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top;
   Theme.Place(content,deviceCard,32,8,808,232);
   Theme.Place(deviceCard,Theme.Label("Connect your TV",12,true,Theme.Text),24,19,460,27);
   var refresh=new ModernButton{Text="Refresh devices"};Theme.Place(deviceCard,refresh,638,14,146,36);refresh.Anchor=AnchorStyles.Top|AnchorStyles.Right;
@@ -164,17 +164,20 @@ public class MainForm : Form {
   Theme.Place(behavior,Theme.Label("TV mode makes your selected display the main screen for games.",9,false,Theme.Muted),24,96,710,26);
   Theme.Place(content,shortcut,32,8,808,130);
   Theme.Place(shortcut,Theme.Label("Your shortcut",12,true,Theme.Text),24,16,450,26);
-  Theme.Place(shortcut,Theme.Label("Press again to return to your desktop and exit Big Picture.",9,false,Theme.Muted),24,46,710,24);
+  Theme.Place(shortcut,Theme.Label("Press again to exit gaming mode and return to your desktop.",9,false,Theme.Muted),24,46,710,24);
   ctrl.Text="Ctrl";alt.Text="Alt";shift.Text="Shift";win.Text="Win";
   int chipX=24;foreach(var chip in new[]{ctrl,alt,shift,win}){Theme.Place(shortcut,chip,chipX,80,60,34);chipX+=70;chip.CheckedChanged+=delegate{UpdateHint();};}
   ctrl.Checked=(s.Modifiers&2)!=0;alt.Checked=(s.Modifiers&1)!=0;shift.Checked=(s.Modifiers&4)!=0;win.Checked=(s.Modifiers&8)!=0;
   Theme.Place(shortcut,key,304,80,100,34);foreach(Keys k in Enum.GetValues(typeof(Keys)).Cast<Keys>().Distinct())if((k>=Keys.F1&&k<=Keys.F24)||(k>=Keys.A&&k<=Keys.Z)||(k>=Keys.D0&&k<=Keys.D9))key.Items.Add(k);key.SelectedItem=(Keys)s.Key;key.SelectedIndexChanged+=delegate{UpdateHint();};
   Theme.Place(content,advanced,32,156,808,240);
-  Theme.Place(advanced,Theme.Label("Open Steam Big Picture",11,true,Theme.Text),24,18,600,26);
-  Theme.Place(advanced,Theme.Label("Launches on your TV. Returning to desktop exits Big Picture.",9,false,Theme.Muted),24,48,610,25);
-  Theme.Place(advanced,steam,738,24,46,28);steam.Anchor=AnchorStyles.Right|AnchorStyles.Top;steam.Checked=s.LaunchSteam;steam.AccessibleName="Open Steam Big Picture";
+  Theme.Place(advanced,Theme.Label("Launch gaming mode",11,true,Theme.Text),24,18,600,26);
+  launcher.Items.Add(new Choice("Steam","Steam Big Picture"));launcher.Items.Add(new Choice("Xbox","Xbox mode"));launcher.SelectedItem=launcher.Items.Cast<Choice>().FirstOrDefault(c=>c.Id==s.Launcher)??launcher.Items[0];Theme.Place(advanced,launcher,24,47,500,32);launcher.Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top;launcher.AccessibleName="Gaming launcher";
+  Theme.Place(advanced,steam,738,24,46,28);steam.Anchor=AnchorStyles.Right|AnchorStyles.Top;steam.Checked=s.LaunchSteam;steam.AccessibleName="Launch selected gaming mode";
   var pathBox=new Panel{BackColor=Theme.Input,Padding=new Padding(10,9,10,8)};Theme.Place(advanced,pathBox,24,84,640,38);pathBox.Anchor=AnchorStyles.Left|AnchorStyles.Right|AnchorStyles.Top;
   steamPath.Text=s.SteamPath;steamPath.BorderStyle=BorderStyle.None;steamPath.BackColor=Theme.Input;steamPath.ForeColor=Theme.Text;steamPath.Dock=DockStyle.Fill;pathBox.Controls.Add(steamPath);
+  var xboxHelp=Theme.Label("Enable Xbox mode in Windows Settings > Gaming. It may cover other screens.",9,false,Theme.Muted);Theme.Place(advanced,xboxHelp,24,84,632,44);xboxHelp.Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right;
+  Action launcherChanged=()=>{bool xbox=((Choice)launcher.SelectedItem).Id=="Xbox";pathBox.Visible=!xbox;xboxHelp.Visible=xbox;};
+  var xboxSettings=new ModernButton{Text="Windows settings"};Theme.Place(advanced,xboxSettings,676,84,108,38);xboxSettings.Font=new Font("Segoe UI",8,FontStyle.Bold);xboxSettings.Anchor=AnchorStyles.Right|AnchorStyles.Top;xboxSettings.Click+=delegate{System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("ms-settings:gaming"){UseShellExecute=true});};
   var browse=new ModernButton{Text="Browse"};Theme.Place(advanced,browse,676,84,108,38);browse.Anchor=AnchorStyles.Right|AnchorStyles.Top;
   Theme.Place(advanced,Theme.Label("Start with Windows",10,true,Theme.Text),24,137,570,25);
   Theme.Place(advanced,Theme.Label("Starts quietly in the system tray.",9,false,Theme.Muted),24,163,600,22);
@@ -183,6 +186,7 @@ public class MainForm : Form {
   timeout.Minimum=3;timeout.Maximum=120;timeout.Value=Math.Max(3,Math.Min(120,s.TimeoutSeconds));Theme.Place(advanced,timeout,590,198,114,36);timeout.Anchor=AnchorStyles.Right|AnchorStyles.Top;
   var seconds=Theme.Label("seconds",9,false,Theme.Muted);Theme.Place(advanced,seconds,716,207,68,24);seconds.Anchor=AnchorStyles.Right|AnchorStyles.Top;
   DpiChanged+=delegate{BeginInvoke((Action)(()=>{LayoutCards();Invalidate(true);}));};
+  launcher.SelectedIndexChanged+=delegate{launcherChanged();browse.Visible=((Choice)launcher.SelectedItem).Id=="Steam";xboxSettings.Visible=!browse.Visible;UpdateSummary();};launcherChanged();browse.Visible=s.Launcher!="Xbox";xboxSettings.Visible=!browse.Visible;
   panel.Resize+=delegate{LayoutCards();};Resize+=delegate{LayoutCards();};
   refresh.Click+=async delegate{await Work(()=>RefreshData(),false);};
   browse.Click+=delegate{using(var dialog=new OpenFileDialog{Filter="Steam (steam.exe)|steam.exe",FileName=steamPath.Text})if(dialog.ShowDialog(this)==DialogResult.OK)steamPath.Text=dialog.FileName;};
@@ -198,7 +202,7 @@ public class MainForm : Form {
   startup.CheckedChanged+=delegate{if(!layoutReady||uiTest)return;bool previous=settings.Startup;try{StartupRegistration.Set(startup.Checked);settings.Startup=startup.Checked;Storage.Save("settings.json",settings);status.ForeColor=Theme.Green;status.Text=startup.Checked?"SteamCouch will start in your tray when you sign in.":"Windows startup is off.";}catch(Exception e){layoutReady=false;startup.Checked=previous;layoutReady=true;settings.Startup=previous;try{StartupRegistration.Set(previous);}catch{}ShowError(e);}};
   monitors.AccessibleName="TV display";audio.AccessibleName="Playback audio";key.AccessibleName="Shortcut key";steamPath.AccessibleName="Steam program";timeout.AccessibleName="Device wait limit in seconds";
   foreach(var section in new Control[]{header,footer,sidebar,hero,overview,deviceCard,behavior,shortcut,advanced})CaptureLayout(section);
-  AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);PerformAutoScale();ResumeLayout(true);layoutReady=true;SelectPage(0);UpdateMode();UpdateHint();
+  AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);PerformAutoScale();ResumeLayout(true);layoutReady=true;SelectPage(Environment.GetCommandLineArgs().Contains("--settings")?2:0);UpdateMode();UpdateHint();
  }
 
  void SelectPage(int page){UpdateSummary();currentPage=page;string[] titles={"Welcome to SteamCouch","TV & audio","Settings"};string[] helpers={"Settle in. Your next session is one shortcut away.","Choose where your games look and sound their best.","Make SteamCouch feel right for you."};pageTitle.Text=titles[page];pageHelp.Text=helpers[page];for(int i=0;i<navigation.Count;i++){navigation[i].Selected=i==page;navigation[i].Invalidate();}panel.AutoScrollPosition=Point.Empty;LayoutCards();}
@@ -226,15 +230,16 @@ public class MainForm : Form {
    status.Width=Math.Max(Theme.Px(this,100),restore.Left-status.Left-Theme.Px(this,18));status.AutoEllipsis=true;
    content.Height=(currentPage==0?overview.Bottom:currentPage==1?behavior.Bottom:advanced.Bottom)+Theme.Px(this,8);panel.AutoScrollMinSize=new Size(0,content.Height);
   }finally{layingOut=false;}
- } void UpdateSummary(){tvSummary.Text=monitors.SelectedItem==null?"Choose a TV in TV & audio":monitors.Text;audioSummary.Text=audio.Text;steamSummary.Text=steam.Checked?"Big Picture opens on your TV and closes on return.":"Automatic Big Picture launch is off.";} void UpdateHint(){var values=new List<string>();if(ctrl.Checked)values.Add("Ctrl");if(alt.Checked)values.Add("Alt");if(shift.Checked)values.Add("Shift");if(win.Checked)values.Add("Win");if(key.SelectedItem!=null)values.Add(key.SelectedItem.ToString());hint.Text=string.Join("  +  ",values);}
+ } void UpdateSummary(){tvSummary.Text=monitors.SelectedItem==null?"Choose a TV in TV & audio":monitors.Text;audioSummary.Text=audio.Text;steamSummary.Text=steam.Checked?(launcher.SelectedItem!=null&&((Choice)launcher.SelectedItem).Id=="Xbox"?"Xbox mode opens on your TV and exits on return.":"Big Picture opens on your TV and closes on return."):"Automatic gaming-mode launch is off.";} void UpdateHint(){var values=new List<string>();if(ctrl.Checked)values.Add("Ctrl");if(alt.Checked)values.Add("Alt");if(shift.Checked)values.Add("Shift");if(win.Checked)values.Add("Win");if(key.SelectedItem!=null)values.Add(key.SelectedItem.ToString());hint.Text=string.Join("  +  ",values);}
  void UpdateMode(){toggle.Text=busy?"Switching...":engine.Active?"Return to desktop":"Activate TV mode";mode.Text=busy?"SWITCHING":engine.Active?"TV MODE":"DESKTOP MODE";mode.ForeColor=engine.Active?Theme.Accent:Theme.Green;restore.Enabled=!busy&&engine.Active;tray.Text=engine.Active?"SteamCouch - TV mode":"SteamCouch - Desktop mode";}
  void Register(Settings s){if(!Native.RegisterHotKey(Handle,1,s.Modifiers|0x4000,(uint)s.Key))throw new InvalidOperationException("That shortcut is already in use. Choose another combination and save.");}
  void Save(){
   if(busy)throw new InvalidOperationException("Wait for the current operation to finish.");
   if(monitors.SelectedItem==null||audio.SelectedItem==null||key.SelectedItem==null)throw new InvalidOperationException("Select a TV, audio option, and shortcut.");
   uint mods=(uint)((ctrl.Checked?2:0)|(alt.Checked?1:0)|(shift.Checked?4:0)|(win.Checked?8:0));if(mods==0)throw new InvalidOperationException("Choose at least one shortcut modifier, such as Ctrl or Alt.");
-  var next=new Settings{MonitorId=((Choice)monitors.SelectedItem).Id,AudioId=((Choice)audio.SelectedItem).Id,KeepOthers=keep.Checked,LaunchSteam=steam.Checked,SteamPath=steamPath.Text.Trim(),Startup=startup.Checked,Modifiers=mods,Key=(int)(Keys)key.SelectedItem,TimeoutSeconds=(int)timeout.Value};
-  if(next.LaunchSteam&&!File.Exists(next.SteamPath))throw new InvalidOperationException("Select an existing Steam program.");
+  var next=new Settings{MonitorId=((Choice)monitors.SelectedItem).Id,AudioId=((Choice)audio.SelectedItem).Id,Launcher=((Choice)launcher.SelectedItem).Id,KeepOthers=keep.Checked,LaunchSteam=steam.Checked,SteamPath=steamPath.Text.Trim(),Startup=startup.Checked,Modifiers=mods,Key=(int)(Keys)key.SelectedItem,TimeoutSeconds=(int)timeout.Value};
+  if(next.Launcher=="Xbox"&&next.Modifiers==8&&next.Key==(int)Keys.F11)throw new InvalidOperationException("Win + F11 belongs to Xbox mode. Choose a different SteamCouch shortcut.");
+  if(next.LaunchSteam&&next.Launcher=="Steam"&&!File.Exists(next.SteamPath))throw new InvalidOperationException("Select an existing Steam program.");
   if(!uiTest){Native.UnregisterHotKey(Handle,1);try{Register(next);StartupRegistration.Set(next.Startup);Storage.Save("settings.json",next);}catch{try{Native.UnregisterHotKey(Handle,1);Register(settings);}catch{}throw;}}
   else Storage.Save("settings.json",next);
   settings=next;UpdateSummary();
@@ -262,11 +267,11 @@ public class MainForm : Form {
   if(busy)throw new InvalidOperationException("UI is still refreshing.");
   string path=Storage.PathOf("settings.json");if(!File.Exists(path))Storage.Save("settings.json",settings);string original=File.ReadAllText(path);var saved=Storage.Read<Settings>("settings.json");
   try {
-   keep.Checked=!saved.KeepOthers;steam.Checked=!saved.LaunchSteam;startup.Checked=!saved.Startup;timeout.Value=saved.TimeoutSeconds==45?46:45;key.SelectedItem=Keys.F11;ctrl.Checked=true;alt.Checked=false;shift.Checked=false;win.Checked=false;
+   launcher.SelectedItem=launcher.Items.Cast<Choice>().First(c=>c.Id=="Xbox");keep.Checked=!saved.KeepOthers;steam.Checked=!saved.LaunchSteam;startup.Checked=!saved.Startup;timeout.Value=saved.TimeoutSeconds==45?46:45;key.SelectedItem=Keys.F11;ctrl.Checked=true;alt.Checked=false;shift.Checked=false;win.Checked=false;
    Save();var result=Storage.Read<Settings>("settings.json");
-   if(result.KeepOthers==saved.KeepOthers||result.LaunchSteam==saved.LaunchSteam||result.Startup==saved.Startup||result.Key!=(int)Keys.F11||result.Modifiers!=2||result.TimeoutSeconds!=(int)timeout.Value)throw new InvalidOperationException("The redesigned controls did not save their values.");
+   if(result.Launcher!="Xbox"||result.KeepOthers==saved.KeepOthers||result.LaunchSteam==saved.LaunchSteam||result.Startup==saved.Startup||result.Key!=(int)Keys.F11||result.Modifiers!=2||result.TimeoutSeconds!=(int)timeout.Value)throw new InvalidOperationException("The redesigned controls did not save their values.");
   } finally {
-   File.WriteAllText(path,original);settings=saved;keep.Checked=saved.KeepOthers;steam.Checked=saved.LaunchSteam;startup.Checked=saved.Startup;timeout.Value=saved.TimeoutSeconds;key.SelectedItem=(Keys)saved.Key;ctrl.Checked=(saved.Modifiers&2)!=0;alt.Checked=(saved.Modifiers&1)!=0;shift.Checked=(saved.Modifiers&4)!=0;win.Checked=(saved.Modifiers&8)!=0;UpdateHint();
+   File.WriteAllText(path,original);settings=saved;launcher.SelectedItem=launcher.Items.Cast<Choice>().First(c=>c.Id==saved.Launcher);keep.Checked=saved.KeepOthers;steam.Checked=saved.LaunchSteam;startup.Checked=saved.Startup;timeout.Value=saved.TimeoutSeconds;key.SelectedItem=(Keys)saved.Key;ctrl.Checked=(saved.Modifiers&2)!=0;alt.Checked=(saved.Modifiers&1)!=0;shift.Checked=(saved.Modifiers&4)!=0;win.Checked=(saved.Modifiers&8)!=0;UpdateHint();
   }
  }
  [DllImport("user32.dll")] static extern IntPtr GetWindowDpiAwarenessContext(IntPtr h);
@@ -299,6 +304,7 @@ public class MainForm : Form {
   if(uiTest)CheckBindings();if(busy)throw new InvalidOperationException("Device refresh has not completed.");
   var report=new List<string>{"Settings binding check: PASS","TV: "+monitors.Text,"Shortcut: "+hint.Text,"Keep monitors: "+keep.Checked,"Icon: "+(appIcon!=null)};
   foreach(var size in new[]{new Size(1100,740),new Size(960,640)}){Size=new Size(Theme.Px(this,size.Width),Theme.Px(this,size.Height));PerformLayout();for(int page=0;page<3;page++){SelectPage(page);PerformLayout();using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf("preview-"+page+"-"+size.Width+".png"));}bool valid=footer.ClientRectangle.Contains(save.Bounds)&&footer.ClientRectangle.Contains(restore.Bounds)&&!panel.HorizontalScroll.Visible&&!panel.VerticalScroll.Visible;report.Add(size.Width+" page "+page+" layout: "+(valid?"PASS":"FAIL"));if(!valid){File.WriteAllLines(Storage.PathOf("ui-test.txt"),report);throw new InvalidOperationException("Preview layout overflow; DPI="+DeviceDpi+" sidebar="+sidebar.Width+" footer="+footer.Size+" save="+save.Bounds);}}}
+  launcher.SelectedItem=launcher.Items.Cast<Choice>().First(c=>c.Id=="Xbox");SelectPage(2);Refresh();using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf("xbox-settings-preview.png"));}launcher.SelectedItem=launcher.Items.Cast<Choice>().First(c=>c.Id==settings.Launcher);
   WindowState=FormWindowState.Maximized;Application.DoEvents();SelectPage(0);Refresh();
   using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf("home-maximized.png"));}
   bool centeredHome=hero.Width<=Theme.Px(this,880)&&Math.Abs(hero.Left-(panel.ClientSize.Width-hero.Width)/2)<=1&&pageTitle.Left==hero.Left;

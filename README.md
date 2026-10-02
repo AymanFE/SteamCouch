@@ -2,26 +2,26 @@
 
 <p align="center"><img src="assets/steamcouch.png" width="128" alt="SteamCouch sofa icon"></p>
 
-**Your TV, your audio, and Steam Big Picture. One shortcut.**
+**Your TV, your audio, and your gaming launcher. One shortcut.**
 
 SteamCouch is a small Windows tray app for moving between desktop use and couch
 gaming. It reconnects your selected TV, makes it the main display, switches
-playback audio, and opens Steam Big Picture. Press the same shortcut again to
-exit Big Picture and restore your previous display layout and audio devices.
+playback audio, and opens your choice of Steam Big Picture or Xbox mode. Press the same shortcut again to
+exit the selected mode and restore your previous display layout and audio devices.
 Steam stays running.
 
 ## Download
 
 **[Download the latest Windows release](https://github.com/AymanFE/SteamCouch/releases/latest)**
 
-Choose `SteamCouch-v1.2.0-windows-x64.zip` under **Assets**. You do not need the
+Choose `SteamCouch-v1.3.0-windows-x64.zip` under **Assets**. You do not need the
 "Source code" downloads unless you want to build or modify the app.
 
 1. Extract the whole ZIP to a writable folder, such as Documents or a folder of your choice.
 2. Open `SteamCouch.exe`.
 3. Open **TV & audio** and select your TV and audio output. Automatic audio works when the TV name matches, or exactly one playback output becomes available when the TV connects.
-4. Click **Save settings**, then open **Home** and choose **Activate TV mode**, or press **Ctrl + Alt + F12**.
-5. Press the shortcut again to exit Big Picture and return to your desktop.
+4. In **Settings**, choose **Steam Big Picture** or **Xbox mode** under **Launch gaming mode**, then click **Save settings**. Open **Home** and choose **Activate TV mode**, or press **Ctrl + Alt + F12**.
+5. Press the shortcut again to exit gaming mode and return to your desktop.
 
 The shortcut can be changed. Closing the window keeps SteamCouch running in the
 system tray. Right-click its tray icon for settings, restore, or quit. Starting
@@ -35,8 +35,8 @@ provided alongside the ZIP.
 
 - Choose your TV and playback device.
 - Keep the other monitors on, or use only the TV.
-- Open Steam Big Picture automatically on the selected TV.
-- Exit Big Picture automatically when returning to desktop, without shutting down Steam.
+- Choose Steam Big Picture or Windows 11 Xbox mode, with the selected TV made primary before launch.
+- Exit the selected gaming mode before restoring desktop displays and audio.
 - Restore monitor positions, resolutions, refresh rates, primary display, and the three previous playback defaults.
 - Recover a saved desktop setup after restarting SteamCouch.
 - Customize the shortcut, Steam location, device wait time, and Windows startup option.
@@ -110,3 +110,6 @@ utilities keep their own freeware terms; see [third-party notices](THIRD-PARTY-N
 SteamCouch is a community utility, not an official Valve product.
 
 The Start with Windows switch applies immediately and launches into the system tray at sign-in. Keep SteamCouch.exe.config beside the executable for native per-monitor DPI scaling.
+
+## Xbox mode
+Xbox mode requires a supported Windows 11 installation and the Xbox app. Enable Xbox mode under Windows Settings > Gaming first; confirm Win + F11 enters and exits it. SteamCouch uses that Windows shortcut and verifies the mode through Windows'' gaming-experience API. It checks that the Xbox window is full screen on the selected primary TV. Xbox mode may cover secondary screens even when SteamCouch keeps them connected. SteamCouch does not install feature enablers or change Windows'' Xbox-mode configuration. Win + F11 cannot also be used as SteamCouch''s shortcut for Xbox mode.

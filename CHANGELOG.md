@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0 — Xbox-mode support
+
+- Choose Steam Big Picture or Xbox mode in Settings.
+- Verify Xbox-mode entry and the selected primary display.
+- Persist the chosen launcher for correct recovery after app restart.
+- Restore displays and audio even if exiting Xbox mode fails, retaining a retry point.
+
+
 ## 1.2.0 — First public release
 
 - Configurable TV/display and playback audio switching.
