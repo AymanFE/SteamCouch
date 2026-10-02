@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
@@ -19,6 +19,7 @@ public class Settings {
  public string Launcher = "Steam";
  public string SteamPath = @"C:\Program Files (x86)\Steam\steam.exe";
  public bool KeepOthers = true, LaunchSteam = true, Startup = false;
+ public bool DisableControllerGameBar = false;
  public int TimeoutSeconds = 30;
  public uint Modifiers = 3;
  public int Key = (int)Keys.F12;
@@ -234,7 +235,7 @@ public static class Program {
   bool created; using(var mutex=new Mutex(true,(args.Contains("--ui-test")||args.Contains("--self-test")?@"Local\SteamCouch.Preview":@"Local\TVLounge.SingleInstance"),out created)) {
    if(!created) { if(args.Contains("--tray"))return 0; MessageBox.Show("SteamCouch is already running. Open Settings from its system tray icon.","SteamCouch"); return 1; }
    try {
-    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test(); return 0; }
+    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test(); return 0; }
     if(args.Contains("--ui-test")) { string oldData=Storage.Data; string preview=Path.Combine(oldData,"ui-preview"); Directory.CreateDirectory(preview); foreach(string name in new[]{"settings.json","restore.json"}) { string from=Path.Combine(oldData,name),to=Path.Combine(preview,name); if(File.Exists(from))File.Copy(from,to,true); else if(File.Exists(to))File.Delete(to); } Storage.Data=preview; }
     var d=new Devices();
     if(args.Contains("--native-validate")) { NativeDisplay.Save(Storage.PathOf("native-validation.json")); return 0; }
@@ -261,7 +262,7 @@ public static class Program {
      finally { if(engine.Active) engine.Restore(s.TimeoutSeconds); }
      return 0;
     }
-    if(!args.Contains("--ui-test"))s.Startup=StartupRegistration.Enabled; var form=new MainForm(s,d); if(args.Contains("--ui-test")) { var timer=new System.Windows.Forms.Timer{Interval=4000}; timer.Tick+=delegate { timer.Stop();try{form.WritePreview();}catch(Exception error){File.WriteAllText(Storage.PathOf("preview-error.txt"),error.ToString());Environment.ExitCode=1;}finally{Application.Exit();} }; timer.Start(); } Application.Run(form); return Environment.ExitCode;
+    if(!args.Contains("--ui-test")){s.Startup=StartupRegistration.Enabled;s.DisableControllerGameBar=!ControllerGameBar.Enabled;} var form=new MainForm(s,d); if(args.Contains("--ui-test")) { var timer=new System.Windows.Forms.Timer{Interval=4000}; timer.Tick+=delegate { timer.Stop();try{form.WritePreview();}catch(Exception error){File.WriteAllText(Storage.PathOf("preview-error.txt"),error.ToString());Environment.ExitCode=1;}finally{Application.Exit();} }; timer.Start(); } Application.Run(form); return Environment.ExitCode;
    } catch(Exception e) { Storage.Log(e.ToString()); File.WriteAllText(Storage.PathOf("last-error.txt"),e.ToString()); if(!args.Any(a=>a.StartsWith("--")))MessageBox.Show(e.Message,"SteamCouch"); return 1; }
   }
  }
@@ -374,6 +375,21 @@ internal static class StartupRegistration {
    using(var run=Microsoft.Win32.Registry.CurrentUser.OpenSubKey(root+@"\Run"))if(run.GetValue("SteamCouch")!=null)throw new System.Exception("Startup disable failed.");
    System.IO.File.WriteAllText(Storage.PathOf("startup-test.txt"),"PASS: quoted command, legacy migration, enable, disable, and disabled-marker reset in an isolated registry key.");
   }finally{Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(root,false);}
+ }
+}
+}
+
+namespace TVLounge {
+internal static class ControllerGameBar {
+ const string Path=@"Software\Microsoft\GameBar";
+ const string Value="UseNexusForGameBarEnabled";
+ public static bool Enabled {get{return Read(Path);}}
+ static bool Read(string path){using(var key=Microsoft.Win32.Registry.CurrentUser.OpenSubKey(path)){return key==null||System.Convert.ToInt32(key.GetValue(Value,1))!=0;}}
+ static void Write(string path,bool enabled){using(var key=Microsoft.Win32.Registry.CurrentUser.CreateSubKey(path))key.SetValue(Value,enabled?1:0,Microsoft.Win32.RegistryValueKind.DWord);if(Read(path)!=enabled)throw new System.IO.IOException("Windows could not update the controller shortcut.");}
+ public static void Set(bool enabled){Write(Path,enabled);}
+ public static void Test(){
+  string path=@"Software\SteamCouch\ControllerTest-"+System.Guid.NewGuid().ToString("N");
+  try{if(!Read(path))throw new System.Exception("Missing controller setting should use Windows' enabled default.");Write(path,false);if(Read(path))throw new System.Exception("Controller shortcut disable failed.");Write(path,true);if(!Read(path))throw new System.Exception("Controller shortcut restore failed.");System.IO.File.WriteAllText(Storage.PathOf("controller-test.txt"),"PASS: Windows default, disable, and enable verified using an isolated registry key.");}finally{Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(path,false);}
  }
 }
 }

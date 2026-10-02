@@ -1,4 +1,4 @@
-# SteamCouch
+﻿# SteamCouch
 
 <p align="center"><img src="assets/steamcouch.png" width="128" alt="SteamCouch sofa icon"></p>
 
@@ -113,3 +113,6 @@ The Start with Windows switch applies immediately and launches into the system t
 
 ## Xbox mode
 Xbox mode requires a supported Windows 11 installation and the Xbox app. Enable Xbox mode under Windows Settings > Gaming first; confirm Win + F11 enters and exits it. SteamCouch uses that Windows shortcut and verifies the mode through Windows'' gaming-experience API. It checks that the Xbox window is full screen on the selected primary TV. Xbox mode may cover secondary screens even when SteamCouch keeps them connected. SteamCouch does not install feature enablers or change Windows'' Xbox-mode configuration. Win + F11 cannot also be used as SteamCouch''s shortcut for Xbox mode.
+
+## Controller Xbox button
+In Settings, enable **Disable Xbox button opening Game Bar** to prevent the controller's Xbox/Guide button opening both Steam's menu and Game Bar. The switch applies immediately to the current Windows user, including outside SteamCouch. Win + G remains available. Turn the switch off to restore the controller shortcut. SteamCouch reads the current Windows setting each time it starts.

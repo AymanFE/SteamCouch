@@ -1,24 +1,9 @@
-# SteamCouch 1.3.0
+﻿# SteamCouch 1.3.1
 
-Choose Steam Big Picture or Windows 11 Xbox mode in Settings. SteamCouch enables
-your selected TV, makes it primary, switches playback audio, and launches the
-selected gaming mode. Returning to desktop exits that mode before restoring the
-saved displays and audio.
+Settings now includes **Disable Xbox button opening Game Bar**. Enable it to stop the controller's Xbox/Guide button opening Game Bar alongside Steam's menu. The change applies immediately across Windows for the current user. Win + G still opens Game Bar; turning the option off restores the controller shortcut.
 
-Xbox mode requires the Xbox app and Xbox mode enabled in Windows Settings >
-Gaming. Confirm Windows' Win + F11 shortcut works before selecting it in
-SteamCouch. Xbox mode may cover secondary screens, even if they remain connected.
+The switch reads the actual Windows setting when SteamCouch starts. Existing display, audio, launcher, shortcut, and startup preferences are preserved.
 
-Also fixes a dropdown crash when clicking outside an open selector. All four selectors passed repeated selection and dismissal checks.
+Download SteamCouch-v1.3.1-windows-x64.zip, extract all files together, and open SteamCouch.exe. Keep your existing data folder when updating.
 
-The launcher choice is saved with the recovery snapshot, so restoration still
-uses the correct mode after an app restart or a settings change. Entry failures
-roll back the saved setup; exit failures still restore displays and audio while
-retaining a retry point. Existing settings default to Steam Big Picture.
-
-Download SteamCouch-v1.3.0-windows-x64.zip, extract all files together, and open
-SteamCouch.exe. Includes the required NirSoft tools and DPI configuration.
-
-Validation: Steam regression tests, Xbox orchestration/recovery tests with fake
-devices, and Settings/layout checks passed. Actual Xbox-mode entry on the
-development PC remains unverified pending Windows' Xbox-mode configuration.
+Validation: isolated controller-setting registry tests, settings persistence, orchestration tests, repeated dropdown dismissal checks, normal and compact layouts, maximized Home, three real monitor DPI transitions, and simulated 100–300% scaling passed. A physical controller button press has not been tested.

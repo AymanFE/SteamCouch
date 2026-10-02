@@ -1,4 +1,10 @@
-# Changelog
+﻿# Changelog
+
+## 1.3.1 — Controller shortcut setting
+
+- Add a Settings switch to disable Game Bar opening when the controller Xbox/Guide button is pressed.
+- Apply the change immediately for the current Windows user, with Win + G still available.
+- Reflect the actual Windows setting at startup and keep compact Settings accessible with vertical scrolling.
 
 ## 1.3.0 — Xbox-mode support
 
