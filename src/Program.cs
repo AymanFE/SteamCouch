@@ -20,6 +20,8 @@ public class Settings {
  public string SteamPath = @"C:\Program Files (x86)\Steam\steam.exe";
  public bool KeepOthers = true, LaunchSteam = true, Startup = false;
  public bool DisableControllerGameBar = false;
+ public bool ControllerShortcut=false,KeepAwake=false,SetupCompleted=false,CheckUpdates=true,AutoUpdate=false;
+ public int ControllerMask=0x330,ControllerHoldSeconds=2;
  public int TimeoutSeconds = 30;
  public uint Modifiers = 3;
  public int Key = (int)Keys.F12;
@@ -235,7 +237,7 @@ public static class Program {
   bool created; using(var mutex=new Mutex(true,(args.Contains("--ui-test")||args.Contains("--self-test")?@"Local\SteamCouch.Preview":@"Local\TVLounge.SingleInstance"),out created)) {
    if(!created) { if(args.Contains("--tray"))return 0; MessageBox.Show("SteamCouch is already running. Open Settings from its system tray icon.","SteamCouch"); return 1; }
    try {
-    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test(); return 0; }
+    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run(); return 0; }
     if(args.Contains("--ui-test")) { string oldData=Storage.Data; string preview=Path.Combine(oldData,"ui-preview"); Directory.CreateDirectory(preview); foreach(string name in new[]{"settings.json","restore.json"}) { string from=Path.Combine(oldData,name),to=Path.Combine(preview,name); if(File.Exists(from))File.Copy(from,to,true); else if(File.Exists(to))File.Delete(to); } Storage.Data=preview; }
     var d=new Devices();
     if(args.Contains("--native-validate")) { NativeDisplay.Save(Storage.PathOf("native-validation.json")); return 0; }

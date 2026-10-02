@@ -1,5 +1,15 @@
 ﻿# Changelog
 
+## 1.4.0 — Couch controls and easier setup
+
+- Add a configurable held controller combination to enter TV mode and restore desktop, with release-to-rearm behavior and switching/dialog suppression.
+- Add optional temporary system/display awake requests during TV mode only.
+- Add display/audio/launcher profiles while preserving global preferences.
+- Add a four-step first-run setup wizard, Steam-path selection, and optional TV/desktop round-trip test.
+- Add troubleshooting checks with a reviewable report and local export.
+- Add daily/manual GitHub update checks, release notes access, checksum-validated downloads, and optional idle installation with backups and rollback.
+- Preserve centered Home and compact/mixed-DPI layouts across all five pages.
+
 ## 1.3.1 — Controller shortcut setting
 
 - Add one Settings switch for Game Bar and Controller Bar button shortcuts and Controller Bar opening on connection.

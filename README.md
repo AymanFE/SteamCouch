@@ -14,12 +14,12 @@ Steam stays running.
 
 **[Download the latest Windows release](https://github.com/AymanFE/SteamCouch/releases/latest)**
 
-Choose `SteamCouch-v1.3.0-windows-x64.zip` under **Assets**. You do not need the
+Choose `SteamCouch-v1.4.0-windows-x64.zip` under **Assets**. You do not need the
 "Source code" downloads unless you want to build or modify the app.
 
 1. Extract the whole ZIP to a writable folder, such as Documents or a folder of your choice.
 2. Open `SteamCouch.exe`.
-3. Open **TV & audio** and select your TV and audio output. Automatic audio works when the TV name matches, or exactly one playback output becomes available when the TV connects.
+3. Follow the first-run setup wizard, or open **TV & audio** and select your TV and audio output. Automatic audio works when the TV name matches, or exactly one playback output becomes available when the TV connects.
 4. In **Settings**, choose **Steam Big Picture** or **Xbox mode** under **Launch gaming mode**, then click **Save settings**. Open **Home** and choose **Activate TV mode**, or press **Ctrl + Alt + F12**.
 5. Press the shortcut again to exit gaming mode and return to your desktop.
 
@@ -33,7 +33,12 @@ provided alongside the ZIP.
 
 ## Features
 
-- Choose your TV and playback device.
+- Choose your TV and playback device, with a four-step setup wizard and optional TV/desktop round-trip test.
+- Toggle TV mode with a customizable controller button combination held for 1–5 seconds.
+- Optionally keep the PC and display awake only during TV mode.
+- Save and switch display/audio/launcher profiles.
+- Check GitHub for updates, install with settings preserved, and optionally update automatically while idle.
+- Run troubleshooting checks and export a report without device IDs or account paths.
 - Keep the other monitors on, or use only the TV.
 - Choose Steam Big Picture or Windows 11 Xbox mode, with the selected TV made primary before launch.
 - Exit the selected gaming mode before restoring desktop displays and audio.
@@ -99,7 +104,7 @@ switch your hardware. Hardware testing is separate and opt-in.
 ## Local data and updates
 
 Keep the executable, `SteamCouch.exe.config`, `assets`, and `tools` together. Settings and restore points
-are stored beside the executable in `data`; the app makes no telemetry requests.
+are stored beside the executable in `data`; the app makes no analytics or telemetry requests. Optional update checks contact GitHub for public release information.
 Return to desktop mode and quit SteamCouch before replacing the program files.
 Keep your `data` folder to preserve your settings.
 
@@ -119,3 +124,21 @@ Xbox mode requires a supported Windows 11 installation and the Xbox app. Enable 
 In Settings, enable **Disable Game Bar & Controller Bar** to stop Windows overlays opening alongside Steam's menu when you press the controller's Xbox/Guide button. It also stops Controller Bar appearing when you connect a controller. The switch applies immediately for the current Windows user; Win + G still opens Game Bar. Turning the switch off enables the three controller triggers again.
 
 SteamCouch updates Windows' Game Bar shortcut and Game Bar's own Controller Bar preferences using the Windows app-data API, then notifies running components. It checks the current settings at startup. Keep `tools/windows/controller-overlays.ps1` with the app; it runs through Windows' included PowerShell without opening a console. Game Bar must be installed to manage its Controller Bar preferences. These app-specific preference names may change in future Game Bar versions.
+
+## Controller shortcut and keep awake
+
+Enable **Controller shortcut** in Settings and save. The default is **View + Menu + LB + RB**, held for **2 seconds**. Hold it to enter TV mode, release all buttons, then hold it again to restore desktop. You can choose a different combination and a hold duration from 1 to 5 seconds. SteamCouch must be running; this does not power on the computer. Xbox/XInput-compatible controllers are supported, including compatible virtual controllers. The shortcut is not captured away from games, so choose a combination you do not use in gameplay. Switching, setup dialogs, and update installation suppress the shortcut and require a fresh release before rearming.
+
+**Keep PC and TV awake in TV mode** is off by default. Enable and save it to prevent idle sleep and display timeout during TV sessions. Returning to desktop, disabling it, or quitting the app releases the temporary request. It does not change your Windows power plan or prevent deliberate sleep, locking, or shutdown.
+
+## Profiles, setup, and help
+
+**Profiles** saves the selected display, playback audio, gaming launcher, Steam path, and other-monitor behavior. Name a setup and choose **Save current setup**. Saving the same name replaces that profile. **Use profile** applies and saves it in desktop mode; activate TV mode separately. Global controller, startup, update, and keep-awake preferences stay unchanged.
+
+Open **Help & updates** to rerun the setup wizard or choose **Troubleshoot**. The wizard supports selecting Steam's location and an optional test that enters TV mode and restores your desktop. The troubleshooting report is shown for review before export and includes device names, without device IDs, account names, or local file paths.
+
+## Updates
+
+Automatic update checks are on by default and happen at most once a day while SteamCouch runs. **Check for updates** also works manually. **Install automatically while idle** is optional and off by default; save your preferences to apply them. It installs only in desktop mode, with Big Picture closed, the app hidden in the tray, no open setup dialogs, and at least a minute without keyboard/mouse/controller input. Automatic installs return to the tray.
+
+Only newer stable releases from AymanFE/SteamCouch are considered. Downloads are checked against GitHub's SHA-256 asset digest; archive paths and required files are validated. Updates preserve `data` and keep the previous files under `data/update-backups`. A failed install or startup restores the previous files. Internet errors leave the installed app working. This uses the Windows PowerShell included with Windows; no GitHub login is required. Keep both scripts in `tools/windows` with the executable.

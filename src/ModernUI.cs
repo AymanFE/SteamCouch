@@ -100,7 +100,7 @@ internal class NavButton : Button {
  protected override void OnMouseEnter(EventArgs e){hover=true;Invalidate();base.OnMouseEnter(e);}protected override void OnMouseLeave(EventArgs e){hover=false;Invalidate();base.OnMouseLeave(e);}
  protected override void OnPaint(PaintEventArgs e){e.Graphics.Clear(BackColor);e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;if(Selected||hover){using(var p=Theme.Round(new RectangleF(0,0,Width-1,Height-1),Theme.Px(this,7)))using(var b=new SolidBrush(Selected?Color.FromArgb(47,47,47):Color.FromArgb(40,40,40)))e.Graphics.FillPath(b,p);}if(Selected)using(var b=new SolidBrush(Theme.Accent))e.Graphics.FillRectangle(b,Theme.Px(this,1),Theme.Px(this,13),Theme.Px(this,3),Theme.Px(this,18));using(var f=new Font("Segoe MDL2 Assets",13*Theme.Dpi(this)/72f,FontStyle.Regular,GraphicsUnit.Pixel))TextRenderer.DrawText(e.Graphics,Glyph,f,new Rectangle(Theme.Px(this,18),0,Theme.Px(this,24),Height),Selected?Theme.Accent:Theme.Muted,TextFormatFlags.VerticalCenter|TextFormatFlags.HorizontalCenter);TextRenderer.DrawText(e.Graphics,Text,Font,new Rectangle(Theme.Px(this,54),0,Width-Theme.Px(this,60),Height),Theme.Text,TextFormatFlags.VerticalCenter|TextFormatFlags.Left|TextFormatFlags.NoPrefix);if(Focused&&ShowFocusCues)ControlPaint.DrawFocusRectangle(e.Graphics,new Rectangle(6,4,Width-12,Height-8));}
 }
-public class MainForm : Form {
+public partial class MainForm : Form {
  Settings settings; Engine engine; IDevices devices; bool busy,quitting,uiTest,layoutReady; 
  NotifyIcon tray; Icon appIcon; Image brandImage;
  DarkCombo monitors=new DarkCombo(),audio=new DarkCombo(),key=new DarkCombo(),launcher=new DarkCombo();
@@ -144,10 +144,10 @@ public class MainForm : Form {
   sidebar.Size=new Size(212,740);sidebar.Dock=DockStyle.Left;sidebar.BackColor=Color.FromArgb(32,32,32);
   Theme.Place(sidebar,new PictureBox{Image=brandImage,SizeMode=PictureBoxSizeMode.Zoom,BackColor=sidebar.BackColor},20,23,38,38);
   Theme.Place(sidebar,Theme.Label("SteamCouch",14,true,Theme.Text),66,28,140,32);
-  string[] names={"Home","TV & audio","Settings"};string[] glyphs={"\uE80F","\uE7F4","\uE713"};
+  string[] names={"Home","TV & audio","Settings","Profiles","Help & updates"};string[] glyphs={"\uE80F","\uE7F4","\uE713","\uE8B7","\uE897"};
   for(int i=0;i<names.Length;i++){int page=i;var nav=new NavButton{Text=names[i],Glyph=glyphs[i],BackColor=sidebar.BackColor};Theme.Place(sidebar,nav,10,99+i*52,192,44);nav.Click+=delegate{SelectPage(page);};navigation.Add(nav);}
   var sideNote=Theme.Label("DESKTOP TO COUCH",8,true,Theme.Muted);Theme.Place(sidebar,sideNote,24,645,180,20);sideNote.Anchor=AnchorStyles.Left|AnchorStyles.Bottom;
-  var sideInfo=Theme.Label("One shortcut. All set.\nSteamCouch  1.3",9,false,Theme.Muted);Theme.Place(sidebar,sideInfo,24,676,180,48);sideInfo.Anchor=AnchorStyles.Left|AnchorStyles.Bottom;
+  var sideInfo=Theme.Label("One shortcut. All set.\nSteamCouch  1.4",9,false,Theme.Muted);Theme.Place(sidebar,sideInfo,24,676,180,48);sideInfo.Anchor=AnchorStyles.Left|AnchorStyles.Bottom;
   var main=new Panel{Dock=DockStyle.Fill,BackColor=Theme.Background};Controls.Add(main);Controls.Add(sidebar);
   header.Size=new Size(888,92);header.Dock=DockStyle.Top;header.BackColor=Theme.Background;
   Theme.Place(header,pageTitle,32,20,800,48);pageTitle.Anchor=AnchorStyles.Left|AnchorStyles.Top|AnchorStyles.Right;
@@ -228,18 +228,19 @@ public class MainForm : Form {
   menu.Items.Add("Toggle TV mode",null,async delegate{await Toggle();});menu.Items.Add("Settings",null,delegate{SelectPage(2);Show();WindowState=FormWindowState.Normal;Activate();});menu.Items.Add("Restore desktop",null,async delegate{await Work(()=>engine.Restore(settings.TimeoutSeconds),true);});menu.Items.Add(new ToolStripSeparator());menu.Items.Add("Quit SteamCouch",null,async delegate{if(busy)return;if(engine.Active){await Work(()=>engine.Restore(settings.TimeoutSeconds),true);if(engine.Active)return;}quitting=true;Close();});
   tray=new NotifyIcon{Icon=appIcon??SystemIcons.Application,Text="SteamCouch",Visible=!uiTest,ContextMenuStrip=menu};tray.DoubleClick+=delegate{Show();WindowState=FormWindowState.Normal;Activate();};
   engine.Status=message=>{if(!IsDisposed&&IsHandleCreated)BeginInvoke((Action)(()=>{status.ForeColor=Theme.Muted;status.Text=message;}));};
-  Shown+=async delegate{if(Environment.GetCommandLineArgs().Contains("--tray"))Hide();var work=Screen.FromControl(this).WorkingArea;Size=new Size(Math.Min(Width,work.Width-32),Math.Min(Height,work.Height-32));CenterToScreen();Theme.DarkTitle(this);Theme.SetWindowTheme(panel.Handle,"DarkMode_Explorer",null);if(!uiTest)try{Register(settings);}catch(Exception e){ShowError(e);}await Work(()=>RefreshData(),false);if(engine.Active)status.Text="A saved TV session is available. Restore desktop when you're ready.";UpdateMode();if(Environment.GetCommandLineArgs().Contains("--tray"))Hide();};
+  Shown+=async delegate{if(Environment.GetCommandLineArgs().Contains("--tray"))Hide();var work=Screen.FromControl(this).WorkingArea;Size=new Size(Math.Min(Width,work.Width-32),Math.Min(Height,work.Height-32));CenterToScreen();Theme.DarkTitle(this);Theme.SetWindowTheme(panel.Handle,"DarkMode_Explorer",null);if(!uiTest)try{Register(settings);}catch(Exception e){ShowError(e);}await Work(()=>RefreshData(),false);if(engine.Active)status.Text="A saved TV session is available. Restore desktop when you're ready.";UpdateMode();if(!uiTest)await StartFeatures();if(Environment.GetCommandLineArgs().Contains("--tray"))Hide();};
   FormClosing+=delegate(object sender,FormClosingEventArgs e){if(!quitting&&e.CloseReason==CloseReason.UserClosing){e.Cancel=true;Hide();}};
-  FormClosed+=delegate{Native.UnregisterHotKey(Handle,1);tray.Dispose();if(brandImage!=null)brandImage.Dispose();if(appIcon!=null)appIcon.Dispose();foreach(var spec in logicalLayout.Values)if(spec.OwnedFont!=null)spec.OwnedFont.Dispose();};
+  FormClosed+=delegate{DisposeFeatures();Native.UnregisterHotKey(Handle,1);tray.Dispose();if(brandImage!=null)brandImage.Dispose();if(appIcon!=null)appIcon.Dispose();foreach(var spec in logicalLayout.Values)if(spec.OwnedFont!=null)spec.OwnedFont.Dispose();};
   startup.CheckedChanged+=delegate{if(!layoutReady||uiTest)return;bool previous=settings.Startup;try{StartupRegistration.Set(startup.Checked);settings.Startup=startup.Checked;Storage.Save("settings.json",settings);status.ForeColor=Theme.Green;status.Text=startup.Checked?"SteamCouch will start in your tray when you sign in.":"Windows startup is off.";}catch(Exception e){layoutReady=false;startup.Checked=previous;layoutReady=true;settings.Startup=previous;try{StartupRegistration.Set(previous);}catch{}ShowError(e);}};
   monitors.AccessibleName="TV display";audio.AccessibleName="Playback audio";key.AccessibleName="Shortcut key";steamPath.AccessibleName="Steam program";timeout.AccessibleName="Device wait limit in seconds";
+  AddFeatures();
   foreach(var section in new Control[]{header,footer,sidebar,hero,overview,deviceCard,behavior,shortcut,advanced,controllerCard})CaptureLayout(section);
   AutoScaleMode=AutoScaleMode.Dpi;AutoScaleDimensions=new SizeF(96,96);PerformAutoScale();ResumeLayout(true);layoutReady=true;SelectPage(Environment.GetCommandLineArgs().Contains("--settings")?2:0);UpdateMode();UpdateHint();
  }
 
- void SelectPage(int page){UpdateSummary();currentPage=page;string[] titles={"Welcome to SteamCouch","TV & audio","Settings"};string[] helpers={"Settle in. Your next session is one shortcut away.","Choose where your games look and sound their best.","Make SteamCouch feel right for you."};pageTitle.Text=titles[page];pageHelp.Text=helpers[page];for(int i=0;i<navigation.Count;i++){navigation[i].Selected=i==page;navigation[i].Invalidate();}panel.AutoScrollPosition=Point.Empty;LayoutCards();}
+ void SelectPage(int page){UpdateSummary();currentPage=page;string[] titles={"Welcome to SteamCouch","TV & audio","Settings","Display profiles","Help & updates"};string[] helpers={"Settle in. Your next session is one shortcut away.","Choose where your games look and sound their best.","Make SteamCouch feel right for you.","Save your favorite screens and gaming setups.","Stay up to date and get your couch setup ready."};pageTitle.Text=titles[page];pageHelp.Text=helpers[page];for(int i=0;i<navigation.Count;i++){navigation[i].Selected=i==page;navigation[i].Invalidate();}panel.AutoScrollPosition=Point.Empty;LayoutCards();}
  void LayoutCards(){
-  if(!layoutReady||layingOut)return;layingOut=true;
+  if(!layoutReady||layingOut)return;int initialViewport=panel.ClientSize.Width;layingOut=true;
   try{
    bool centered=currentPage==0&&WindowState==FormWindowState.Maximized;
    int unitMargin=Theme.Px(this,32);
@@ -250,7 +251,7 @@ public class MainForm : Form {
    int cardWidth=centered?Math.Min(Theme.Px(this,880),w-2*unitMargin):w-2*unitMargin;
    int cardLeft=centered?(panel.ClientSize.Width-cardWidth)/2:unitMargin;
    Card[] cards={hero,overview,deviceCard,behavior,shortcut,advanced,controllerCard};int[] ys={8,190,8,250,8,156,408};int[] heights={166,198,232,134,130,240,80};
-   for(int i=0;i<cards.Length;i++){var card=cards[i];card.SetBounds(centered&&i<2?cardLeft:unitMargin,Theme.Px(this,ys[i]),centered&&i<2?cardWidth:w-2*unitMargin,Theme.Px(this,heights[i]));card.Visible=currentPage==0?(i<2):currentPage==1?(i==2||i==3):(i>3);PlaceLogicalChildren(card);}
+   for(int i=0;i<cards.Length;i++){var card=cards[i];card.SetBounds(centered&&i<2?cardLeft:unitMargin,Theme.Px(this,ys[i]),centered&&i<2?cardWidth:w-2*unitMargin,Theme.Px(this,heights[i]));card.Visible=currentPage==0?(i<2):currentPage==1?(i==2||i==3):currentPage==2?(i>3):false;PlaceLogicalChildren(card);}
    foreach(var section in new Control[]{header,footer,sidebar})PlaceLogicalChildren(section);
    if(centered){
     pageTitle.SetBounds(cardLeft,topInset+Theme.Px(this,20),cardWidth,Theme.Px(this,48));
@@ -260,21 +261,23 @@ public class MainForm : Form {
     foreach(Control child in footer.Controls)if(child is Label&&child!=status){child.Left=status.Left;child.Width=cardWidth;}
    }
    status.Width=Math.Max(Theme.Px(this,100),restore.Left-status.Left-Theme.Px(this,18));status.AutoEllipsis=true;
-   content.Height=(currentPage==0?overview.Bottom:currentPage==1?behavior.Bottom:controllerCard.Bottom)+Theme.Px(this,8);panel.AutoScrollMinSize=new Size(0,content.Height);
+   content.Height=(currentPage==0?overview.Bottom:currentPage==1?behavior.Bottom:controllerCard.Bottom)+Theme.Px(this,8);LayoutFeatures(w);panel.AutoScrollMinSize=new Size(0,content.Height);
   }finally{layingOut=false;}
+  if(panel.ClientSize.Width!=initialViewport)LayoutCards();
  } void UpdateSummary(){tvSummary.Text=monitors.SelectedItem==null?"Choose a TV in TV & audio":monitors.Text;audioSummary.Text=audio.Text;steamSummary.Text=steam.Checked?(launcher.SelectedItem!=null&&((Choice)launcher.SelectedItem).Id=="Xbox"?"Xbox mode opens on your TV and exits on return.":"Big Picture opens on your TV and closes on return."):"Automatic gaming-mode launch is off.";} void UpdateHint(){var values=new List<string>();if(ctrl.Checked)values.Add("Ctrl");if(alt.Checked)values.Add("Alt");if(shift.Checked)values.Add("Shift");if(win.Checked)values.Add("Win");if(key.SelectedItem!=null)values.Add(key.SelectedItem.ToString());hint.Text=string.Join("  +  ",values);}
- void UpdateMode(){toggle.Text=busy?"Switching...":engine.Active?"Return to desktop":"Activate TV mode";mode.Text=busy?"SWITCHING":engine.Active?"TV MODE":"DESKTOP MODE";mode.ForeColor=engine.Active?Theme.Accent:Theme.Green;restore.Enabled=!busy&&engine.Active;tray.Text=engine.Active?"SteamCouch - TV mode":"SteamCouch - Desktop mode";}
+ void UpdateMode(){UpdateFeatureMode();toggle.Text=busy?"Switching...":engine.Active?"Return to desktop":"Activate TV mode";mode.Text=busy?"SWITCHING":engine.Active?"TV MODE":"DESKTOP MODE";mode.ForeColor=engine.Active?Theme.Accent:Theme.Green;restore.Enabled=!busy&&engine.Active;tray.Text=engine.Active?"SteamCouch - TV mode":"SteamCouch - Desktop mode";}
  void Register(Settings s){if(!Native.RegisterHotKey(Handle,1,s.Modifiers|0x4000,(uint)s.Key))throw new InvalidOperationException("That shortcut is already in use. Choose another combination and save.");}
  void Save(){
   if(busy)throw new InvalidOperationException("Wait for the current operation to finish.");
   if(monitors.SelectedItem==null||audio.SelectedItem==null||key.SelectedItem==null)throw new InvalidOperationException("Select a TV, audio option, and shortcut.");
   uint mods=(uint)((ctrl.Checked?2:0)|(alt.Checked?1:0)|(shift.Checked?4:0)|(win.Checked?8:0));if(mods==0)throw new InvalidOperationException("Choose at least one shortcut modifier, such as Ctrl or Alt.");
   var next=new Settings{MonitorId=((Choice)monitors.SelectedItem).Id,AudioId=((Choice)audio.SelectedItem).Id,Launcher=((Choice)launcher.SelectedItem).Id,KeepOthers=keep.Checked,LaunchSteam=steam.Checked,SteamPath=steamPath.Text.Trim(),Startup=startup.Checked,DisableControllerGameBar=disableGameBar.Checked,Modifiers=mods,Key=(int)(Keys)key.SelectedItem,TimeoutSeconds=(int)timeout.Value};
+  SaveFeatureSettings(next);
   if(next.Launcher=="Xbox"&&next.Modifiers==8&&next.Key==(int)Keys.F11)throw new InvalidOperationException("Win + F11 belongs to Xbox mode. Choose a different SteamCouch shortcut.");
   if(next.LaunchSteam&&next.Launcher=="Steam"&&!File.Exists(next.SteamPath))throw new InvalidOperationException("Select an existing Steam program.");
   if(!uiTest){Native.UnregisterHotKey(Handle,1);try{Register(next);StartupRegistration.Set(next.Startup);Storage.Save("settings.json",next);}catch{try{Native.UnregisterHotKey(Handle,1);Register(settings);}catch{}throw;}}
   else Storage.Save("settings.json",next);
-  settings=next;UpdateSummary();
+  settings=next;UpdateSummary();UpdateFeatureMode();
   if(!uiTest)StartupRegistration.Set(next.Startup);
  }
  void RefreshData(){var ms=devices.Monitors();var aud=devices.Audio();Invoke((Action)(()=>{
@@ -322,7 +325,7 @@ public class MainForm : Form {
   foreach(var screen in Screen.AllScreens){Size=new Size(960,640);Location=new Point(screen.WorkingArea.Left+10,screen.WorkingArea.Top+10);Application.DoEvents();Size=new Size(Theme.Px(this,960),Theme.Px(this,640));SelectPage(2);Application.DoEvents();using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf("monitor-"+DeviceDpi+".png"));}bool correct=GetDpiForWindow(Handle)==DeviceDpi&&sidebar.Width==Theme.Px(this,212)&&footer.ClientRectangle.Contains(save.Bounds)&&advanced.ClientRectangle.Contains(startup.Bounds)&&advanced.ClientRectangle.Contains(steam.Bounds)&&advanced.ClientRectangle.Contains(timeout.Bounds)&&steamPath.Width>100&&!panel.HorizontalScroll.Visible;report.Add(screen.DeviceName+": "+(correct?"PASS":"FAIL")+" native="+GetDpiForWindow(Handle)+" managed="+DeviceDpi+" sidebar="+sidebar.Width);if(!correct){File.WriteAllLines(Storage.PathOf("dpi-test.txt"),report);throw new InvalidOperationException("Monitor DPI transition failed.");}}
   foreach(int dpi in new[]{96,144,192,288,96}){
    PreviewAtDpi(dpi);
-   for(int page=0;page<3;page++){
+   for(int page=0;page<5;page++){
     SelectPage(page);PerformLayout();Application.DoEvents();
     string name="dpi-"+dpi+"-"+page+".png";
     using(var bitmap=new Bitmap(Width,Height)){bitmap.SetResolution(dpi,dpi);DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf(name));}
@@ -335,15 +338,16 @@ public class MainForm : Form {
  }
  public void WritePreview(){
   if(Environment.GetCommandLineArgs().Contains("--menu-test")){SelectPage(1);monitors.CheckMenuLifetime();audio.CheckMenuLifetime();SelectPage(2);launcher.CheckMenuLifetime();key.CheckMenuLifetime();File.WriteAllText(Storage.PathOf("menu-test.txt"),"PASS: display, audio, launcher, and key dropdowns each opened and closed 12 times, covering selection, outside-click dismissal, and keyboard dismissal.");}
-  if(uiTest)CheckBindings();if(busy)throw new InvalidOperationException("Device refresh has not completed.");
+  if(uiTest){CheckBindings();CheckFeatureBindings();}if(busy)throw new InvalidOperationException("Device refresh has not completed.");
   var report=new List<string>{"Settings binding check: PASS","TV: "+monitors.Text,"Shortcut: "+hint.Text,"Keep monitors: "+keep.Checked,"Icon: "+(appIcon!=null)};
-  foreach(var size in new[]{new Size(1100,740),new Size(960,640)}){Size=new Size(Theme.Px(this,size.Width),Theme.Px(this,size.Height));PerformLayout();for(int page=0;page<3;page++){SelectPage(page);PerformLayout();using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf("preview-"+page+"-"+size.Width+".png"));}bool valid=footer.ClientRectangle.Contains(save.Bounds)&&footer.ClientRectangle.Contains(restore.Bounds)&&!panel.HorizontalScroll.Visible&&(page==2||!panel.VerticalScroll.Visible);report.Add(size.Width+" page "+page+" layout: "+(valid?"PASS":"FAIL"));if(!valid){File.WriteAllLines(Storage.PathOf("ui-test.txt"),report);throw new InvalidOperationException("Preview layout overflow; DPI="+DeviceDpi+" sidebar="+sidebar.Width+" footer="+footer.Size+" save="+save.Bounds+" panel="+panel.ClientSize+" content="+content.Bounds+" min="+panel.AutoScrollMinSize+" horizontal="+panel.HorizontalScroll.Visible);}}}
+  foreach(var size in new[]{new Size(1100,740),new Size(960,640)}){Size=new Size(Theme.Px(this,size.Width),Theme.Px(this,size.Height));PerformLayout();for(int page=0;page<5;page++){SelectPage(page);PerformLayout();using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf("preview-"+page+"-"+size.Width+".png"));}bool valid=footer.ClientRectangle.Contains(save.Bounds)&&footer.ClientRectangle.Contains(restore.Bounds)&&!panel.HorizontalScroll.Visible&&(page==2||page==4||!panel.VerticalScroll.Visible);report.Add(size.Width+" page "+page+" layout: "+(valid?"PASS":"FAIL"));if(!valid){File.WriteAllLines(Storage.PathOf("ui-test.txt"),report);throw new InvalidOperationException("Preview layout overflow; DPI="+DeviceDpi+" sidebar="+sidebar.Width+" footer="+footer.Size+" save="+save.Bounds+" panel="+panel.ClientSize+" content="+content.Bounds+" min="+panel.AutoScrollMinSize+" horizontal="+panel.HorizontalScroll.Visible);}}}
   launcher.SelectedItem=launcher.Items.Cast<Choice>().First(c=>c.Id=="Xbox");SelectPage(2);Refresh();using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf("xbox-settings-preview.png"));}launcher.SelectedItem=launcher.Items.Cast<Choice>().First(c=>c.Id==settings.Launcher);
-  SelectPage(2);panel.ScrollControlIntoView(controllerCard);Refresh();using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf("controller-settings-preview.png"));}
-  WindowState=FormWindowState.Maximized;Application.DoEvents();SelectPage(0);Refresh();
+  SelectPage(2);panel.ScrollControlIntoView(awakeOptions);Refresh();using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf("controller-settings-preview.png"));}
+  if(uiTest)PreviewWizard();
+  WindowState=FormWindowState.Maximized;Application.DoEvents();SelectPage(0);Application.DoEvents();LayoutCards();Refresh();
   using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf("home-maximized.png"));}
   bool centeredHome=hero.Width<=Theme.Px(this,880)&&Math.Abs(hero.Left-(panel.ClientSize.Width-hero.Width)/2)<=1&&pageTitle.Left==hero.Left;
-  report.Add("Maximized Home centered: "+centeredHome);
+  report.Add("Maximized Home centered: "+centeredHome+"; hero="+hero.Bounds+" panel="+panel.ClientSize+" titleLeft="+pageTitle.Left+" DPI="+DeviceDpi+" state="+WindowState);
   SelectPage(1);bool otherPageUnchanged=deviceCard.Left==Theme.Px(this,32);report.Add("TV & audio layout preserved: "+otherPageUnchanged);
   WindowState=FormWindowState.Normal;Application.DoEvents();SelectPage(0);bool normalHome=hero.Left==Theme.Px(this,32);report.Add("Restored Home layout preserved: "+normalHome);
   File.WriteAllLines(Storage.PathOf("ui-test.txt"),report);if(!centeredHome||!otherPageUnchanged||!normalHome)throw new InvalidOperationException("Maximized layout check failed.");
