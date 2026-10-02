@@ -14,7 +14,7 @@ Steam stays running.
 
 **[Download the latest Windows release](https://github.com/AymanFE/SteamCouch/releases/latest)**
 
-Choose `SteamCouch-v1.6.1-windows-x64.zip` under **Assets**. You do not need the
+Choose `SteamCouch-v1.7.0-windows-x64.zip` under **Assets**. You do not need the
 "Source code" downloads unless you want to build or modify the app.
 
 1. Extract the whole ZIP to a writable folder, such as Documents or a folder of your choice.
@@ -171,3 +171,13 @@ Open **Help & updates** to rerun the setup wizard or choose **Troubleshoot**. Th
 Automatic update checks are on by default and happen at most once a day while SteamCouch runs. **Check for updates** also works manually. **Install automatically while idle** is optional and off by default; save your preferences to apply them. It installs only in desktop mode, with Big Picture closed, the app hidden in the tray, no open setup dialogs, and at least a minute without keyboard/mouse/controller input. Automatic installs return to the tray.
 
 Only newer stable releases from AymanFE/SteamCouch are considered. Downloads are checked against GitHub's SHA-256 asset digest; archive paths and required files are validated. Updates preserve `data` and keep the previous files under `data/update-backups`. A failed install or startup restores the previous files. Internet errors leave the installed app working. This uses the Windows PowerShell included with Windows; no GitHub login is required. Keep both scripts in `tools/windows` with the executable.
+
+## Automatic TV power and HDMI input
+
+Under **TV & audio**, optionally enable **Turn on TV & select HDMI automatically**. Choose the installed `cec-client.exe`, the PC's HDMI input (HDMI 1 by default) and a wake delay. Save settings. SteamCouch sends HDMI-CEC power-on and active-source requests before changing Windows displays. Each saved display profile includes these preferences.
+
+This requires CEC enabled on the TV and a libCEC-compatible CEC interface on the PC. Most PC graphics cards do not provide CEC; a compatible USB-CEC adapter is commonly needed. Monitor/TV HDMI support alone is insufficient. Network-based TV control is not included because those protocols differ by manufacturer and TV system.
+
+Install libCEC separately from [Pulse-Eight's official instructions](https://support.pulse-eight.com/support/solutions/articles/30000027406-cec-client-setup-windows-). SteamCouch does not bundle it. **Test TV power & input** sends real commands without changing your Windows display layout. Command completion does not guarantee that the TV honored the request; check the picture and selected input. Close other CEC-control apps if the adapter is busy. Returning to desktop leaves the TV on.
+
+For 4K/120 Hz setups, check your adapter's bandwidth limit before placing it in the video cable path. Pulse-Eight documents a [separate spare-HDMI-port arrangement](https://support.pulse-eight.com/support/solutions/articles/30000053070/thumbs_up); active-source addressing must point to the PC's video input. Receiver/soundbar chains may require additional CEC configuration.

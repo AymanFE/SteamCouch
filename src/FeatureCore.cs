@@ -46,9 +46,10 @@ internal sealed class ControllerInput {
 }
 public sealed class DisplayProfile {
  public string Name,MonitorId,AudioId,Launcher,SteamPath;public string TvHdr="Keep",PlaynitePath;public bool TvVrr;
+ public bool CecEnabled;public string CecPath="";public int CecHdmiPort=1,CecWakeDelay=3;
  public bool KeepOthers,LaunchSteam;
- public static DisplayProfile Capture(string name,Settings settings){return new DisplayProfile{Name=name,MonitorId=settings.MonitorId,AudioId=settings.AudioId,Launcher=settings.Launcher,SteamPath=settings.SteamPath,KeepOthers=settings.KeepOthers,LaunchSteam=settings.LaunchSteam,TvHdr=settings.TvHdr,TvVrr=settings.TvVrr,PlaynitePath=settings.PlaynitePath};}
- public void Apply(Settings settings){settings.MonitorId=MonitorId;settings.AudioId=AudioId;settings.Launcher=Launcher;settings.SteamPath=SteamPath;settings.KeepOthers=KeepOthers;settings.LaunchSteam=LaunchSteam;settings.TvHdr=TvHdr??"Keep";settings.TvVrr=TvVrr;if(!string.IsNullOrWhiteSpace(PlaynitePath))settings.PlaynitePath=PlaynitePath;}
+ public static DisplayProfile Capture(string name,Settings settings){return new DisplayProfile{Name=name,MonitorId=settings.MonitorId,AudioId=settings.AudioId,Launcher=settings.Launcher,SteamPath=settings.SteamPath,KeepOthers=settings.KeepOthers,LaunchSteam=settings.LaunchSteam,TvHdr=settings.TvHdr,TvVrr=settings.TvVrr,PlaynitePath=settings.PlaynitePath,CecEnabled=settings.CecEnabled,CecPath=settings.CecPath,CecHdmiPort=settings.CecHdmiPort,CecWakeDelay=settings.CecWakeDelay};}
+ public void Apply(Settings settings){settings.CecEnabled=CecEnabled;settings.CecPath=CecPath;settings.CecHdmiPort=CecHdmiPort;settings.CecWakeDelay=CecWakeDelay;settings.MonitorId=MonitorId;settings.AudioId=AudioId;settings.Launcher=Launcher;settings.SteamPath=SteamPath;settings.KeepOthers=KeepOthers;settings.LaunchSteam=LaunchSteam;settings.TvHdr=TvHdr??"Keep";settings.TvVrr=TvVrr;if(!string.IsNullOrWhiteSpace(PlaynitePath))settings.PlaynitePath=PlaynitePath;}
  public override string ToString(){return Name;}
 }
 internal static class ProfileStore {

@@ -14,6 +14,7 @@ using Microsoft.Win32;
 
 namespace TVLounge {
 public class Settings {
+ public bool CecEnabled=false;public string CecPath="";public int CecHdmiPort=1,CecWakeDelay=3;
  public string MonitorId = "";
  public string AudioId = "";
  public string Launcher = "Steam";
@@ -49,7 +50,7 @@ public static class Storage {
  public static void Log(string value) { File.AppendAllText(PathOf("activity.log"),DateTime.Now.ToString("s")+" "+value+Environment.NewLine); }
 }
 public interface IDevices {
- List<Row> Monitors(); List<Row> Audio();
+ void WakeTv(Settings settings); List<Row> Monitors(); List<Row> Audio();
  void SaveDisplays(string file); void LoadDisplays(string file); void ReconnectDisplays();
  void Enable(string id); void Primary(string id); void Disable(string id); void SetAudio(string id,int role);
  void ValidatePlaynite(string path);void EnterPlaynite(string path,string monitor,int timeout);void ExitPlaynite(string path,int timeout);
@@ -86,6 +87,7 @@ public class Devices : IDevices {
   return rows;
   } finally { if(File.Exists(file))File.Delete(file); }
  }
+ public void WakeTv(Settings s){CecClient.Wake(s);}
  public List<Row> Monitors() { return Read(display,"monitors.csv","/HideInactiveMonitors 0 /ShowDisconnectedMonitors 1"); }
  public List<Row> Audio() { return Read(audio,"audio.csv","/ShowUnpluggedDevices 1 /ShowDisabledDevices 1 /SaveFileEncoding 3").Where(r=>r.Get("Type")=="Device" && r.Get("Direction")=="Render").ToList(); }
  public void SaveDisplays(string file) { NativeDisplay.Save(file+".ccd.json"); Run(display,"/SaveConfig "+Quote(file)); if(!File.Exists(file)||new FileInfo(file).Length==0) throw new IOException("Could not save display restore point."); }
@@ -136,6 +138,8 @@ public class Engine {
  public void Activate(Settings s) {
   if(Active) throw new InvalidOperationException("Restore desktop first; a restore point is already present.");
   if(s.TimeoutSeconds<3 || s.TimeoutSeconds>120) throw new InvalidOperationException("Readiness timeout must be 3 to 120 seconds.");
+  if(string.IsNullOrWhiteSpace(s.MonitorId))throw new InvalidOperationException("Choose your TV before enabling TV mode.");
+  if(s.CecEnabled){Status("Waking TV and selecting HDMI input...");d.WakeTv(s);}
   var monitors=d.Monitors(); var target=monitors.SingleOrDefault(r=>Id(r)==s.MonitorId);
   if(target==null || string.IsNullOrEmpty(s.MonitorId)) throw new InvalidOperationException("Select an available TV in Settings. Check its cable and power.");
   if(!monitors.Any(IsOn)) throw new InvalidOperationException("No active desktop display detected.");
@@ -242,12 +246,13 @@ public class Choice {
 }
 public static class Program {
  [STAThread] public static int Main(string[] args) {
+  if(args.Contains("--cec-fixture"))return CecClient.Fixture(args);
   Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
   bool created; using(var mutex=new Mutex(true,(args.Contains("--ui-test")||args.Contains("--self-test")||args.Contains("--placement-test")||args.Contains("--steam-placement-test")||args.Contains("--inventory-test")?@"Local\SteamCouch.Preview":@"Local\TVLounge.SingleInstance"),out created)) {
    if(!created) { if(args.Contains("--tray"))return 0; MessageBox.Show("SteamCouch is already running. Open Settings from its system tray icon.","SteamCouch"); return 1; }
    try {
     if(args.Contains("--placement-test")){WindowPlacement.Test();return 0;}
-    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run();OptionalTests.Run(); return 0; }
+    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run();OptionalTests.Run();CecClient.Test(); return 0; }
     if(args.Contains("--ui-test")) { string oldData=Storage.Data; string preview=Path.Combine(oldData,"ui-preview"); Directory.CreateDirectory(preview); foreach(string name in new[]{"settings.json","restore.json"}) { string from=Path.Combine(oldData,name),to=Path.Combine(preview,name); if(File.Exists(from))File.Copy(from,to,true); else if(File.Exists(to))File.Delete(to); } Storage.Data=preview; }
     var d=new Devices();if(!args.Contains("--ui-test"))try{VideoSession.RecoverPending();}catch(Exception recovery){Storage.Log("Interrupted video change needs restore: "+recovery.Message);}
     if(args.Contains("--inventory-test")){Task.WaitAll(Enumerable.Range(0,6).Select(i=>Task.Run(()=>{if(d.Monitors().Count==0||d.Audio().Count==0)throw new Exception("Empty concurrent inventory");})).ToArray());File.WriteAllText(Storage.PathOf("inventory-test.txt"),"PASS: six concurrent display/audio inventories completed without file collisions.");return 0;}
@@ -288,6 +293,7 @@ public static class Program {
  }
 }
 public class FakeDevices : IDevices {
+ public void WakeTv(Settings s){Events.Add("cec-wake");}
  public List<Row> Displays; public List<Row> Outputs; List<Row> original; public bool PlayniteOpen;public bool XboxOpen,FailXboxExit,FailXboxEnter,XboxUnavailable;public int XboxCalls; public bool FailAudio,FailRestore,NeedsReconnect,FailSteamExit,BigPictureOpen; public int SteamCalls,ExitCalls; public List<string> Events=new List<string>();
  public FakeDevices() {
   Displays=new List<Row>{new Row{{"Monitor ID","desk"},{"Name","desktop"},{"Active","Yes"},{"Primary","Yes"},{"Resolution","1920 X 1080"},{"Left-Top","0, 0"}},new Row{{"Monitor ID","tv"},{"Name","tv"},{"Monitor Name","Beyond TV"},{"Active","No"},{"Primary","No"}}};

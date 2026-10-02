@@ -1,0 +1,19 @@
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+using System.Threading.Tasks;
+namespace TVLounge {
+public partial class MainForm {
+ Card cecCard=new Card();ModernSwitch cecEnabled=new ModernSwitch();TextBox cecPath=new TextBox();DarkCombo cecInput=new DarkCombo();DarkCombo cecDelay=new DarkCombo();
+ void AddCec(){Theme.Place(content,cecCard,32,594,808,300);Theme.Place(cecCard,Theme.Label("Turn on TV & select HDMI automatically",12,true,Theme.Text),24,16,690,28);Theme.Place(cecCard,cecEnabled,738,18,46,28);cecEnabled.Anchor=AnchorStyles.Top|AnchorStyles.Right;cecEnabled.AccessibleName="Enable HDMI-CEC TV power and input control";
+ Theme.Place(cecCard,Theme.Label("Requires a compatible PC CEC adapter, libCEC software and CEC enabled on your TV.",9,false,Theme.Muted),24,50,760,40);
+ Theme.Place(cecCard,Theme.Label("LIBCEC PROGRAM",8,true,Theme.Muted),24,97,730,20);cecPath.BackColor=Theme.Input;cecPath.ForeColor=Theme.Text;cecPath.BorderStyle=BorderStyle.FixedSingle;Theme.Place(cecCard,cecPath,24,123,584,32);cecPath.Anchor=AnchorStyles.Top|AnchorStyles.Left|AnchorStyles.Right;var browse=new ModernButton{Text="Browse"};Theme.Place(cecCard,browse,626,119,158,38);browse.Anchor=AnchorStyles.Top|AnchorStyles.Right;browse.Click+=delegate{using(var picker=new OpenFileDialog{Filter="CEC client|cec-client.exe",FileName=cecPath.Text})if(picker.ShowDialog(this)==DialogResult.OK)cecPath.Text=picker.FileName;};
+ Theme.Place(cecCard,Theme.Label("PC'S HDMI INPUT",8,true,Theme.Muted),24,168,280,20);for(int i=1;i<=15;i++)cecInput.Items.Add(new Choice(i.ToString(),"HDMI "+i));Theme.Place(cecCard,cecInput,24,193,280,36);Theme.Place(cecCard,Theme.Label("WAKE DELAY (SECONDS)",8,true,Theme.Muted),326,168,240,20);for(int i=0;i<=30;i++)cecDelay.Items.Add(new Choice(i.ToString(),i+" seconds"));Theme.Place(cecCard,cecDelay,326,193,240,36);
+ var test=new ModernButton{Text="Test TV power & input"};Theme.Place(cecCard,test,24,248,256,38);test.Click+=async delegate{var next=Clone(settings);ReadCec(next);try{if(busy||installingUpdate)return;CecClient.Validate(next);bool sent=false;await Work(()=>{CecClient.Wake(next);sent=true;},false);if(sent)status.Text="TV wake and input commands sent. Check that the TV is on the selected HDMI input.";}catch(Exception e){ShowError(e);}};Theme.Place(cecCard,Theme.Label("Test sends real TV commands. Desktop return leaves the TV on.",9,false,Theme.Muted),300,246,484,43);SetCec(settings);CaptureLayout(cecCard);}
+ void SetCec(Settings s){cecEnabled.Checked=s.CecEnabled;cecPath.Text=string.IsNullOrWhiteSpace(s.CecPath)?CecClient.Find():s.CecPath;cecInput.SelectedItem=cecInput.Items[Math.Max(0,Math.Min(14,s.CecHdmiPort-1))];cecDelay.SelectedItem=cecDelay.Items[Math.Max(0,Math.Min(30,s.CecWakeDelay))];}
+ void ReadCec(Settings s){s.CecEnabled=cecEnabled.Checked;s.CecPath=cecPath.Text.Trim();s.CecHdmiPort=int.Parse(((Choice)cecInput.SelectedItem).Id);s.CecWakeDelay=int.Parse(((Choice)cecDelay.SelectedItem).Id);}
+ void SaveCec(Settings s){ReadCec(s);if(s.CecEnabled&&!uiTest)CecClient.Validate(s);}
+ void CheckCecBindings(){string file=Storage.PathOf("settings.json"),original=System.IO.File.ReadAllText(file);var before=Clone(settings);try{cecEnabled.Checked=true;cecPath.Text="example\\cec-client.exe";cecInput.SelectedItem=cecInput.Items[3];cecDelay.SelectedItem=cecDelay.Items[7];Save();var saved=Storage.Read<Settings>("settings.json");if(!saved.CecEnabled||saved.CecHdmiPort!=4||saved.CecWakeDelay!=7||saved.CecPath!=cecPath.Text)throw new Exception("CEC settings did not persist");}finally{System.IO.File.WriteAllText(file,original);settings=before;SetCec(before);}}
+ void LayoutCec(int width){cecCard.SetBounds(Theme.Px(this,32),Theme.Px(this,594),width-Theme.Px(this,64),Theme.Px(this,300));cecCard.Visible=currentPage==1;PlaceLogicalChildren(cecCard);if(currentPage==1)content.Height=cecCard.Bottom+Theme.Px(this,8);}
+}
+}

@@ -1,11 +1,11 @@
-# SteamCouch 1.6.1 — Display scaling and reliability fixes
+# SteamCouch 1.7.0 — Optional HDMI-CEC TV control
 
-- Fix oversized Steam Big Picture on mixed-DPI setups using fresh native monitor bounds and physical-pixel window coordinates, verified after placement and allowed to settle during startup.
-- Apply the same placement correction to Playnite and refresh quick-menu geometry after display changes.
-- Wait for quick-menu initialization before applying game profiles or displaying sleep confirmation.
-- Isolate concurrent display/audio inventory files.
-- Recheck TV-session state after background detection and preserve automatic-return tracking when unrelated settings are saved.
-- Block the controller mute shortcut behind sleep/display confirmations.
-- Honor tray/settings restart preferences after updates and rollbacks.
+- Optionally wake a compatible TV and request the PC's HDMI input before activating TV mode.
+- Configure the installed libCEC program, HDMI input and wake delay under TV & audio.
+- Test power/input commands without changing the Windows display layout.
+- Save TV-control settings with each display profile.
+- Missing software, adapter failures and timeouts stop activation before desktop displays/audio change.
 
-Validation: real Steam placement on three connected monitors; physical window placement; six concurrent device inventories; full self-tests; UI/menu/DPI checks; isolated updater restart and settings preservation. Complete TV-only hardware transitions and live per-game HDR changes were not repeated for this patch.
+Off by default. Requires enabled TV CEC, separately installed libCEC and a compatible PC-side CEC interface, commonly a USB adapter. Ordinary GPU HDMI output usually lacks CEC. Network control is not included. TV responses and receiver routing vary; desktop return leaves the TV on. libCEC is not bundled.
+
+Validation: protocol ordering/error tests, real subprocess streams/exit-code handling/timeout cleanup with a test fixture, activation integration, settings/profile persistence and UI/DPI checks. Physical TV wake/input switching was not tested because no compatible CEC setup was available.
