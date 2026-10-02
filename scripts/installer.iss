@@ -41,10 +41,18 @@ Filename: "{app}\tools\cec\driver\p8-usbcec-driver-installer.exe"; Verb: "runas"
 Filename: "{app}\SteamCouch.exe"; Parameters: "--settings"; Description: "Open SteamCouch"; Flags: nowait postinstall skipifsilent
 [Code]
 function PrepareToInstall(var NeedsRestart: Boolean): String;
+var Helper: String; ExitCode: Integer;
 begin
   Result := '';
   if FileExists(ExpandConstant('{app}\data\restore.json')) then
-    Result := 'Return to desktop mode in SteamCouch before installing an update.';
+    begin
+      Result := 'Return to desktop mode in SteamCouch before installing an update.';
+      Exit;
+    end;
+  Helper := ExpandConstant('{app}\tools\adb\adb.exe');
+  if FileExists(Helper) then
+    if not Exec(Helper, '-P 5039 kill-server', '', SW_HIDE, ewWaitUntilTerminated, ExitCode) then
+      Result := 'Could not close the TV connection helper. Close SteamCouch and try again.';
 end;
 function InitializeUninstall(): Boolean;
 begin
