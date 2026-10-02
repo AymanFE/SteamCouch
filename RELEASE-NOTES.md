@@ -9,6 +9,8 @@ Xbox mode requires the Xbox app and Xbox mode enabled in Windows Settings >
 Gaming. Confirm Windows' Win + F11 shortcut works before selecting it in
 SteamCouch. Xbox mode may cover secondary screens, even if they remain connected.
 
+Also fixes a dropdown crash when clicking outside an open selector. All four selectors passed repeated selection and dismissal checks.
+
 The launcher choice is saved with the recovery snapshot, so restoration still
 uses the correct mode after an app restart or a settings change. Entry failures
 roll back the saved setup; exit failures still restore displays and audio while
