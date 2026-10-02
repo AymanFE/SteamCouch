@@ -11,7 +11,7 @@
 
 Requires TV debugging approval and an available network connection. Standby wake and HDMI input support depend on TV settings/firmware. Returning to desktop leaves the TV on.
 
-Validation: bundled ADB native smoke test; input validation; wake ordering; unauthorized/error handling; simulated activation failure safety; profile/settings persistence; UI/DPI checks; installer install/reinstall/uninstall checks. Physical TV control is pending authorization: the supplied TV refuses the default debugging port.
+Validation: bundled ADB native smoke test; input validation; wake ordering; unauthorized/error handling; simulated activation failure safety; profile/settings persistence; UI/DPI checks; installer install/reinstall/uninstall checks. Physical testing: the authorized TCL connection and its model-specific HDMI 1 route passed through the installed app. Standby wake failed with the current TV power settings; network standby configuration still needs verification.
 
 
 ## 1.7.1
