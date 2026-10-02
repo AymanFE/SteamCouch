@@ -1,5 +1,6 @@
-﻿param([Parameter(Mandatory=$true)][string]$Stage,[Parameter(Mandatory=$true)][string]$Target,[int]$WaitPid,[switch]$Tray)
+param([Parameter(Mandatory=$true)][string]$Stage,[Parameter(Mandatory=$true)][string]$Target,[int]$WaitPid,[switch]$Tray)
 $ErrorActionPreference='Stop'
+$restartArgument=if($Tray){'--tray'}else{'--settings'}
 $targetRoot=[IO.Path]::GetFullPath($Target).TrimEnd('\')
 $stageRoot=[IO.Path]::GetFullPath($Stage).TrimEnd('\')
 $expected=[IO.Path]::Combine($targetRoot,'data','update-staging')+'\'
@@ -21,7 +22,7 @@ try {
   New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($destination)) -Force | Out-Null
   $installed.Add($relative);Copy-Item -LiteralPath $file.FullName -Destination $destination -Force
  }
- $new=Start-Process -FilePath ([IO.Path]::Combine($targetRoot,'SteamCouch.exe')) -ArgumentList --settings -WindowStyle Hidden -PassThru
+ $new=Start-Process -FilePath ([IO.Path]::Combine($targetRoot,'SteamCouch.exe')) -ArgumentList $restartArgument -WindowStyle Hidden -PassThru
  Start-Sleep -Seconds 3
  if($new.HasExited){throw 'The updated app could not start.'}
  'Update installed; previous version saved in data/update-backups.' | Set-Content -LiteralPath ([IO.Path]::Combine($targetRoot,'data','update-result.txt'))
@@ -30,6 +31,6 @@ try {
  if($installed.Count -eq 0 -and $process -and !$process.HasExited){$failure | Set-Content -LiteralPath ([IO.Path]::Combine($targetRoot,'data','update-result.txt'));exit 1}
  foreach($relative in $installed){$destination=[IO.Path]::GetFullPath([IO.Path]::Combine($targetRoot,$relative));$old=[IO.Path]::Combine($backup,$relative);if(!$destination.StartsWith($targetRoot+'\',[StringComparison]::OrdinalIgnoreCase)){continue};if(Test-Path -LiteralPath $old){Copy-Item -LiteralPath $old -Destination $destination -Force}else{Remove-Item -LiteralPath $destination -ErrorAction SilentlyContinue}}
  $failure | Set-Content -LiteralPath ([IO.Path]::Combine($targetRoot,'data','update-result.txt'))
- Start-Process -FilePath ([IO.Path]::Combine($targetRoot,'SteamCouch.exe')) -ArgumentList --settings -WindowStyle Hidden
+ Start-Process -FilePath ([IO.Path]::Combine($targetRoot,'SteamCouch.exe')) -ArgumentList $restartArgument -WindowStyle Hidden
  exit 1
 }

@@ -9,7 +9,7 @@ Expand-Archive -LiteralPath (Join-Path $PSScriptRoot 'vendor\multimonitortool-x6
 Expand-Archive -LiteralPath (Join-Path $PSScriptRoot 'vendor\soundvolumeview-x64.zip') -DestinationPath (Join-Path $OutputDirectory 'tools\audio') -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'scripts\controller-overlays.ps1') -Destination (Join-Path $OutputDirectory 'tools\windows\controller-overlays.ps1') -Force
 Copy-Item -LiteralPath (Join-Path $PSScriptRoot 'scripts\apply-update.ps1') -Destination (Join-Path $OutputDirectory 'tools\windows\apply-update.ps1') -Force
-$sources = @('Program.cs','NativeDisplay.cs','ModernUI.cs','SteamClient.cs','XboxClient.cs','FeatureCore.cs','QuickMenuCore.cs','QuickMenuWindow.cs','QuickMenuIntegration.cs','PlayniteClient.cs','OptionalCore.cs','GameActivity.cs','OptionalUI.cs','Updates.cs','ExtendedUI.cs','SetupWizard.cs','AssemblyInfo.cs') | ForEach-Object { Join-Path (Join-Path $PSScriptRoot 'src') $_ }
+$sources = @('Program.cs','WindowPlacement.cs','NativeDisplay.cs','ModernUI.cs','SteamClient.cs','XboxClient.cs','FeatureCore.cs','QuickMenuCore.cs','QuickMenuWindow.cs','QuickMenuIntegration.cs','PlayniteClient.cs','OptionalCore.cs','GameActivity.cs','OptionalUI.cs','Updates.cs','ExtendedUI.cs','SetupWizard.cs','AssemblyInfo.cs') | ForEach-Object { Join-Path (Join-Path $PSScriptRoot 'src') $_ }
 $icon = Join-Path $PSScriptRoot 'assets\steamcouch.ico'
 $manifest = Join-Path $PSScriptRoot 'src\SteamCouch.manifest'
 $output = Join-Path $OutputDirectory 'SteamCouch.exe'

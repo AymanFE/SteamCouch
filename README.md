@@ -14,7 +14,7 @@ Steam stays running.
 
 **[Download the latest Windows release](https://github.com/AymanFE/SteamCouch/releases/latest)**
 
-Choose `SteamCouch-v1.6.0-windows-x64.zip` under **Assets**. You do not need the
+Choose `SteamCouch-v1.6.1-windows-x64.zip` under **Assets**. You do not need the
 "Source code" downloads unless you want to build or modify the app.
 
 1. Extract the whole ZIP to a writable folder, such as Documents or a folder of your choice.

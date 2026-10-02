@@ -72,7 +72,8 @@ public class Devices : IDevices {
   }
  }
  List<Row> Read(string tool,string name,string options) {
-  string file=Storage.PathOf(name);
+  string file=Storage.PathOf(Path.GetFileNameWithoutExtension(name)+"-"+Guid.NewGuid().ToString("N")+".csv");
+  try {
   if(File.Exists(file)) File.Delete(file);
   Run(tool,options+" /scomma "+Quote(file));
   var rows=new List<Row>();
@@ -83,6 +84,7 @@ public class Devices : IDevices {
    while(!parser.EndOfData) { string[] values=parser.ReadFields(); var row=new Row(); for(int i=0;i<headers.Length && i<values.Length;i++) row[headers[i]]=values[i]; rows.Add(row); }
   }
   return rows;
+  } finally { if(File.Exists(file))File.Delete(file); }
  }
  public List<Row> Monitors() { return Read(display,"monitors.csv","/HideInactiveMonitors 0 /ShowDisconnectedMonitors 1"); }
  public List<Row> Audio() { return Read(audio,"audio.csv","/ShowUnpluggedDevices 1 /ShowDisabledDevices 1 /SaveFileEncoding 3").Where(r=>r.Get("Type")=="Device" && r.Get("Direction")=="Render").ToList(); }
@@ -98,7 +100,7 @@ public class Devices : IDevices {
  public void ValidateXbox(){XboxClient.Validate();} public void EnterXbox(string monitor,int timeout){XboxClient.Enter(monitor,timeout);} public void ExitXbox(int timeout){XboxClient.Set(false,timeout);}
  public void ExitBigPicture(int timeout) { SteamClient.ExitBigPicture(timeout); }
  public void Steam(string path) { Process.Start(new ProcessStartInfo(path,"steam://open/bigpicture"){UseShellExecute=true}); }
- public bool PlaceSteam(string monitor) { IntPtr previous=Native.SetThreadDpiAwarenessContext(new IntPtr(-2)); try { bool found=false;
+ public bool PlaceSteam(string monitor) { using(var scope=new WindowPlacement.PhysicalScope()) { bool found=false;
   // Move only the Big Picture window, never chat, store, or game windows.
   Native.EnumWindows(delegate(IntPtr h,IntPtr unused) {
    if(!Native.IsWindowVisible(h)) return true;
@@ -108,11 +110,10 @@ public class Devices : IDevices {
    uint pid; Native.GetWindowThreadProcessId(h,out pid);
    try { using(var p=Process.GetProcessById((int)pid)) {
     if(p.ProcessName!="steam" && p.ProcessName!="steamwebhelper") return true;
-    var screen=Screen.AllScreens.FirstOrDefault(s=>s.DeviceName==monitor);
-    if(screen!=null) { var b=screen.Bounds; found=Native.SetWindowPos(h,IntPtr.Zero,b.X,b.Y,b.Width,b.Height,0x14); }
+    found=WindowPlacement.Fit(h,monitor)||found;
    }} catch(ArgumentException) { }
    return true;
-  },IntPtr.Zero); return found; } finally { if(previous!=IntPtr.Zero)Native.SetThreadDpiAwarenessContext(previous); }
+  },IntPtr.Zero); return found; }
  }
 }
 public static class Extensions {
@@ -175,7 +176,7 @@ public class Engine {
    if(s.LaunchSteam&&s.Launcher=="Xbox"){Status("Opening Xbox mode on your TV...");var tv=d.Monitors().Single(r=>Id(r)==s.MonitorId);d.EnterXbox(tv.Get("Name"),s.TimeoutSeconds);}
    if(s.LaunchSteam&&s.Launcher=="Steam") {
     Status("Opening Steam Big Picture..."); d.Steam(s.SteamPath);
-    Wait(()=> { var tv=d.Monitors().Single(r=>Id(r)==s.MonitorId); if(tv.Get("Primary")!="Yes") d.Primary(s.MonitorId); return d.PlaceSteam(tv.Get("Name")); },s.TimeoutSeconds,"Steam Big Picture did not become ready. Finish any Steam update or sign-in, then try again.");
+    int steamReady=0; Wait(()=> { var tv=d.Monitors().Single(r=>Id(r)==s.MonitorId); if(tv.Get("Primary")!="Yes"){d.Primary(s.MonitorId);steamReady=0;} steamReady=d.PlaceSteam(tv.Get("Name"))?steamReady+1:0; return steamReady>=3; },s.TimeoutSeconds,"Steam Big Picture did not become ready. Finish any Steam update or sign-in, then try again.");
    }
    Storage.Log("TV mode activated; keep other monitors="+s.KeepOthers); Status("TV mode is on. Press the shortcut again to restore desktop.");
   } catch(Exception error) {
@@ -242,12 +243,21 @@ public class Choice {
 public static class Program {
  [STAThread] public static int Main(string[] args) {
   Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
-  bool created; using(var mutex=new Mutex(true,(args.Contains("--ui-test")||args.Contains("--self-test")?@"Local\SteamCouch.Preview":@"Local\TVLounge.SingleInstance"),out created)) {
+  bool created; using(var mutex=new Mutex(true,(args.Contains("--ui-test")||args.Contains("--self-test")||args.Contains("--placement-test")||args.Contains("--steam-placement-test")||args.Contains("--inventory-test")?@"Local\SteamCouch.Preview":@"Local\TVLounge.SingleInstance"),out created)) {
    if(!created) { if(args.Contains("--tray"))return 0; MessageBox.Show("SteamCouch is already running. Open Settings from its system tray icon.","SteamCouch"); return 1; }
    try {
+    if(args.Contains("--placement-test")){WindowPlacement.Test();return 0;}
     if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run();OptionalTests.Run(); return 0; }
     if(args.Contains("--ui-test")) { string oldData=Storage.Data; string preview=Path.Combine(oldData,"ui-preview"); Directory.CreateDirectory(preview); foreach(string name in new[]{"settings.json","restore.json"}) { string from=Path.Combine(oldData,name),to=Path.Combine(preview,name); if(File.Exists(from))File.Copy(from,to,true); else if(File.Exists(to))File.Delete(to); } Storage.Data=preview; }
     var d=new Devices();if(!args.Contains("--ui-test"))try{VideoSession.RecoverPending();}catch(Exception recovery){Storage.Log("Interrupted video change needs restore: "+recovery.Message);}
+    if(args.Contains("--inventory-test")){Task.WaitAll(Enumerable.Range(0,6).Select(i=>Task.Run(()=>{if(d.Monitors().Count==0||d.Audio().Count==0)throw new Exception("Empty concurrent inventory");})).ToArray());File.WriteAllText(Storage.PathOf("inventory-test.txt"),"PASS: six concurrent display/audio inventories completed without file collisions.");return 0;}
+    if(args.Contains("--steam-placement-test")){
+     if(SteamClient.IsBigPictureOpen())throw new InvalidOperationException("Close Big Picture before this test.");
+     try{d.Steam(@"C:\Program Files (x86)\Steam\steam.exe");var watch=Stopwatch.StartNew();while(!SteamClient.IsBigPictureOpen()){if(watch.Elapsed.TotalSeconds>30)throw new TimeoutException("Steam did not open.");Thread.Sleep(250);}var screens=Screen.AllScreens;
+      foreach(var screen in screens){bool placed=false;for(int i=0;i<20;i++){placed=d.PlaceSteam(screen.DeviceName);Thread.Sleep(250);if(placed&&i>=4)break;}if(!placed||!d.PlaceSteam(screen.DeviceName))throw new Exception("Steam placement failed: "+screen.DeviceName);}
+      File.WriteAllText(Storage.PathOf("steam-placement-test.txt"),"PASS: real Steam Big Picture fitted "+screens.Length+" connected monitors using verified physical bounds; Steam remained running.");
+     }finally{d.ExitBigPicture(30);}return 0;
+    }
     if(args.Contains("--native-validate")) { NativeDisplay.Save(Storage.PathOf("native-validation.json")); return 0; }
     if(args.Contains("--diagnose")) { Storage.Save("diagnostics.json",new{Monitors=d.Monitors(),Audio=d.Audio()}); return 0; }
     var s=File.Exists(Storage.PathOf("settings.json"))?Storage.Read<Settings>("settings.json"):new Settings();

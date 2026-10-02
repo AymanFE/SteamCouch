@@ -1,13 +1,11 @@
-# SteamCouch 1.6.0 — Optional couch controls
+# SteamCouch 1.6.1 — Display scaling and reliability fixes
 
-All five additions are optional. Existing preferences stay intact, and new automatic behavior stays off until enabled and saved.
+- Fix oversized Steam Big Picture on mixed-DPI setups using fresh native monitor bounds and physical-pixel window coordinates, verified after placement and allowed to settle during startup.
+- Apply the same placement correction to Playnite and refresh quick-menu geometry after display changes.
+- Wait for quick-menu initialization before applying game profiles or displaying sleep confirmation.
+- Isolate concurrent display/audio inventory files.
+- Recheck TV-session state after background detection and preserve automatic-return tracking when unrelated settings are saved.
+- Block the controller mute shortcut behind sleep/display confirmations.
+- Honor tray/settings restart preferences after updates and rollbacks.
 
-- Configure three independently enabled controller actions using Select + A/B/X/Y, with overlapping bindings rejected. Test connected controller buttons, triggers and sticks without activating shortcuts.
-- Opt into automatic desktop return when Steam Big Picture or Playnite fullscreen closes. An eight-second grace period and launcher-child app detection reduce accidental restoration during games.
-- Opt into a Sleep tile and shortcut. Confirm before sleeping; desktop restoration must complete successfully first. Games are not force-closed.
-- Opt into per-game HDR, resolution and refresh-rate profiles. Enable each game separately, select its actual executable and confirm display changes. Previous TV-session settings restore after game exit or disabling the feature.
-- Choose Playnite fullscreen as a third launcher. Playnite uses its documented fullscreen/desktop commands and is not installed automatically.
-
-Xbox mode still uses manual desktop return. Launcher-child detection is conservative; background apps can require manual restoration. Protected game executables may not allow profile detection. The quick menu works best with borderless/windowed games.
-
-Validation: opt-in defaults; shortcut conflict and sleep-dependency tests; automatic-return grace and active-game guards; full-path game matching; simulated Playnite device ordering/restoration; isolated video rollback/recovery and VRR preservation tests; optional settings persistence; menu/profile/tester previews; main-app DPI checks from 100–300%. PC sleep, live per-game display changes, and a real Playnite installation have not been exercised during verification.
+Validation: real Steam placement on three connected monitors; physical window placement; six concurrent device inventories; full self-tests; UI/menu/DPI checks; isolated updater restart and settings preservation. Complete TV-only hardware transitions and live per-game HDR changes were not repeated for this patch.
