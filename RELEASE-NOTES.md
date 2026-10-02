@@ -1,8 +1,8 @@
 ﻿# SteamCouch 1.3.1
 
-Settings now includes **Disable Game Bar & Controller Bar**. Enable it to stop the controller's Xbox/Guide button opening Game Bar or Controller Bar alongside Steam's menu. It also disables Controller Bar appearing on controller connection. The change applies immediately across Windows for the current user. Win + G still opens Game Bar; turning the option off restores the controller shortcut.
+Settings now includes **Disable Game Bar & Controller Bar**. Enable it to stop the controller's Xbox/Guide button opening Game Bar or Controller Bar alongside Steam's menu. It also disables Controller Bar appearing on controller connection. The change applies immediately across Windows for the current user. Win + G still opens Game Bar; turning the option off re-enables both button shortcuts and Controller Bar on connection.
 
-The switch reads the actual Windows setting when SteamCouch starts. Existing display, audio, launcher, shortcut, and startup preferences are preserved.
+The switch reads the actual Windows and Game Bar settings when SteamCouch starts. Existing display, audio, launcher, shortcut, and startup preferences are preserved.
 
 Download SteamCouch-v1.3.1-windows-x64.zip, extract all files together, and open SteamCouch.exe. Keep your existing data folder when updating.
 
