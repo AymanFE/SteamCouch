@@ -14,7 +14,7 @@ Steam stays running.
 
 **[Download the latest Windows release](https://github.com/AymanFE/SteamCouch/releases/latest)**
 
-Choose `SteamCouch-v1.5.0-windows-x64.zip` under **Assets**. You do not need the
+Choose `SteamCouch-v1.6.0-windows-x64.zip` under **Assets**. You do not need the
 "Source code" downloads unless you want to build or modify the app.
 
 1. Extract the whole ZIP to a writable folder, such as Documents or a folder of your choice.
@@ -42,8 +42,12 @@ provided alongside the ZIP.
 - Save and switch display/audio/launcher profiles.
 - Check GitHub for updates, install with settings preserved, and optionally update automatically while idle.
 - Run troubleshooting checks and export a report without device IDs or account paths.
+- Test controller buttons without firing shortcuts; enable individual Select + A/B/X/Y actions for volume, mute, desktop return, or confirmed sleep.
+- Optionally return to desktop after Steam Big Picture or Playnite fullscreen closes, with a grace period and launcher-child game/app checks.
+- Optionally show Sleep in the quick menu; desktop restoration must finish successfully first.
+- Optionally apply per-game HDR/resolution/refresh profiles in TV mode, matching each game's full executable path.
 - Keep the other monitors on, or use only the TV.
-- Choose Steam Big Picture or Windows 11 Xbox mode, with the selected TV made primary before launch.
+- Choose Steam Big Picture, Windows 11 Xbox mode, or Playnite fullscreen, with the selected TV made primary before launch.
 - Exit the selected gaming mode before restoring desktop displays and audio.
 - Restore monitor positions, resolutions, refresh rates, primary display, and the three previous playback defaults.
 - Recover a saved desktop setup after restarting SteamCouch.
@@ -79,6 +83,16 @@ HDR availability is checked for the TV's current connection. Resolution and refr
 **Windows VRR assistance** is the Windows-wide preference for games without native VRR support. It is not a TV-specific G-SYNC/FreeSync switch and does not prove VRR is active. Enable compatible VRR on the TV and in GPU settings too. Restart the game after changing this preference. SteamCouch preserves other GPU preference entries and restores the previous VRR entry on desktop return.
 
 **View/Select + Xbox** can be selected for entering and leaving TV mode. Guide-button detection depends on the controller and Windows driver; Steam and Windows may still respond to that button. View + Menu + LB + RB remains the reliable default fallback. Shortcuts require release before firing again.
+
+## Optional couch features
+
+Every new automatic feature is **off by default**, and upgrading preserves your existing preferences. Open Settings, scroll to the couch options, enable only what you want, and click **Save settings**.
+
+- **Additional controller actions:** each of three slots has an independent switch, button choice and action. New actions work in TV mode. Enabled shortcuts cannot overlap. Use **Test controller** to see live buttons, triggers and stick movement; shortcuts pause while the tester is open.
+- **Automatic desktop return:** opt in for Steam Big Picture or Playnite fullscreen. SteamCouch must first observe the launcher, waits at least eight seconds after it closes, and waits while launcher-child apps appear active. This is conservative: background apps launched from the gaming launcher may require a manual desktop return. Xbox mode continues to use manual restoration.
+- **Sleep:** opt in to show it in the quick menu. A second confirmation is required. SteamCouch restores desktop displays/audio/video preferences first and does not sleep if restoration fails. Disabling Sleep also disables any Sleep shortcut. Games are never force-closed.
+- **Per-game profiles:** enable the master option in Settings and enable each desired game separately in Profiles. Choose the actual game .exe, not its launcher. The profile applies only during TV mode when exactly one enabled game is detected, and changes require confirmation within 20 seconds. Previous TV-session settings restore when the game closes or the master option is disabled. Rejected changes are not retried until the game exits. Enable TV mode while editing if you need its supported resolution/refresh choices. Protected games that prevent executable-path inspection may not be detected.
+- **Playnite:** choose Playnite fullscreen as the launcher, select its program in Settings, and save. SteamCouch uses Playnite's supported fullscreen/desktop commands. Playnite is neither installed nor launched unless selected. Returning to desktop switches Playnite to desktop mode; it does not terminate games.
 
 ## Troubleshooting
 

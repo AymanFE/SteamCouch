@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.0
+
+- Added individually enabled controller action slots and a live controller tester that suppresses shortcuts while testing.
+- Added optional automatic desktop return for Steam Big Picture and Playnite with an eight-second grace period and conservative launcher-child app detection.
+- Added an optional Sleep tile and controller action, requiring confirmation and successful desktop restoration before requesting Windows sleep.
+- Added an opt-in per-game profile manager for HDR, resolution and refresh rate, with individual game switches, exact executable matching, safe confirmation and session restoration.
+- Added Playnite fullscreen as an optional launcher in Settings and setup, including desktop-mode restoration.
+- Preserved existing settings and kept all new automatic behavior off by default.
+
 ## 1.5.0
 
 - Added a controller-operated quick menu on the session TV for volume, mute, audio output, HDR, resolution, refresh rate, Windows VRR assistance and desktop return.

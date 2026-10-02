@@ -22,6 +22,7 @@ public class Settings {
  public bool DisableControllerGameBar = false;
  public bool ControllerShortcut=false,KeepAwake=false,SetupCompleted=false,CheckUpdates=true,AutoUpdate=false;
  public int ControllerMask=0x330,ControllerHoldSeconds=2; public int MenuMask=0x8020;public bool QuickMenu=true,TvVrr=false;public string TvHdr="Keep";
+ public bool AutoReturn=false,AllowSleep=false,GameProfilesEnabled=false; public List<ControllerActionBinding> ControllerActions=OptionalPolicy.Defaults(); public string PlaynitePath=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),@"Playnite\Playnite.FullscreenApp.exe");
  public int TimeoutSeconds = 30;
  public uint Modifiers = 3;
  public int Key = (int)Keys.F12;
@@ -33,7 +34,7 @@ public class Snapshot {
  public List<Row> Monitors = new List<Row>();
  public string[] Audio = new string[3];
  public string DisplayFile;
- public string Launcher;public string SessionMonitorId;
+ public string Launcher;public string SessionMonitorId,PlaynitePath;public bool LauncherStarted;
 }
 public static class Storage {
  public static string Root = AppDomain.CurrentDomain.BaseDirectory;
@@ -51,6 +52,7 @@ public interface IDevices {
  List<Row> Monitors(); List<Row> Audio();
  void SaveDisplays(string file); void LoadDisplays(string file); void ReconnectDisplays();
  void Enable(string id); void Primary(string id); void Disable(string id); void SetAudio(string id,int role);
+ void ValidatePlaynite(string path);void EnterPlaynite(string path,string monitor,int timeout);void ExitPlaynite(string path,int timeout);
  void ValidateXbox();void EnterXbox(string monitor,int timeout);void ExitXbox(int timeout);
  void Steam(string path); void ExitBigPicture(int timeout); bool PlaceSteam(string monitor); void Pause(int milliseconds);
 }
@@ -92,6 +94,7 @@ public class Devices : IDevices {
  public void Disable(string id) { Run(display,"/disable "+Quote(id)); }
  public void SetAudio(string id,int role) { Run(audio,"/SetDefault "+Quote(id)+" "+role); }
  public void Pause(int milliseconds) { Thread.Sleep(milliseconds); }
+ public void ValidatePlaynite(string path){PlayniteClient.Validate(path);}public void EnterPlaynite(string path,string monitor,int timeout){PlayniteClient.Enter(path,monitor,timeout);}public void ExitPlaynite(string path,int timeout){PlayniteClient.Exit(path,timeout);}
  public void ValidateXbox(){XboxClient.Validate();} public void EnterXbox(string monitor,int timeout){XboxClient.Enter(monitor,timeout);} public void ExitXbox(int timeout){XboxClient.Set(false,timeout);}
  public void ExitBigPicture(int timeout) { SteamClient.ExitBigPicture(timeout); }
  public void Steam(string path) { Process.Start(new ProcessStartInfo(path,"steam://open/bigpicture"){UseShellExecute=true}); }
@@ -135,13 +138,13 @@ public class Engine {
   var monitors=d.Monitors(); var target=monitors.SingleOrDefault(r=>Id(r)==s.MonitorId);
   if(target==null || string.IsNullOrEmpty(s.MonitorId)) throw new InvalidOperationException("Select an available TV in Settings. Check its cable and power.");
   if(!monitors.Any(IsOn)) throw new InvalidOperationException("No active desktop display detected.");
-  if(s.Launcher!="Steam"&&s.Launcher!="Xbox")throw new InvalidOperationException("Choose Steam Big Picture or Xbox mode in Settings.");
+  if(s.Launcher!="Steam"&&s.Launcher!="Xbox"&&s.Launcher!="Playnite")throw new InvalidOperationException("Choose Steam Big Picture, Xbox mode, or Playnite in Settings.");
   if(s.Launcher=="Xbox"&&s.Modifiers==8&&s.Key==(int)Keys.F11)throw new InvalidOperationException("Choose a SteamCouch shortcut other than Xbox mode's Win + F11.");
-  if(s.LaunchSteam&&s.Launcher=="Xbox")d.ValidateXbox();
+  if(s.LaunchSteam&&s.Launcher=="Xbox")d.ValidateXbox();if(s.LaunchSteam&&s.Launcher=="Playnite")d.ValidatePlaynite(s.PlaynitePath);
   if(s.LaunchSteam && s.Launcher=="Steam" && !File.Exists(s.SteamPath)) throw new InvalidOperationException("Select the Steam executable in Settings.");
   var beforeAudio=d.Audio(); var defaults=Defaults(beforeAudio);
   if(defaults.Any(string.IsNullOrEmpty)) throw new InvalidOperationException("Could not identify all current playback defaults; no settings were changed.");
-  var snapshot=new Snapshot{Monitors=monitors,Audio=defaults,DisplayFile=Storage.PathOf("desktop.cfg"),Launcher=s.LaunchSteam?s.Launcher:"Steam",SessionMonitorId=s.MonitorId};
+  var snapshot=new Snapshot{Monitors=monitors,Audio=defaults,DisplayFile=Storage.PathOf("desktop.cfg"),Launcher=s.LaunchSteam?s.Launcher:"Steam",SessionMonitorId=s.MonitorId,PlaynitePath=s.PlaynitePath,LauncherStarted=s.LaunchSteam};
   d.SaveDisplays(snapshot.DisplayFile); Storage.Save("restore.json",snapshot);
   try {
    Status("Connecting TV..."); d.Enable(s.MonitorId);
@@ -168,6 +171,7 @@ public class Engine {
    for(int role=0;role<3;role++) d.SetAudio(audioId,role);
    Wait(()=>Defaults(d.Audio()).All(id=>id==audioId),s.TimeoutSeconds,"Windows did not switch playback audio to the TV.");
       if(d is Devices&&(s.TvHdr=="On"||s.TvHdr=="Off"||s.TvVrr)){var videoTarget=VideoNative.Target(d.Monitors().Single(r=>Id(r)==s.MonitorId).Get("Name"));if(s.TvHdr=="On"||s.TvHdr=="Off"){VideoSession.RememberHdr(videoTarget);if(VideoNative.Hdr(videoTarget).Enabled!=(s.TvHdr=="On"))VideoNative.Hdr(videoTarget,s.TvHdr=="On");}if(s.TvVrr)VideoSession.SetVrr(true);}
+   if(s.LaunchSteam&&s.Launcher=="Playnite"){Status("Opening Playnite fullscreen on your TV...");d.EnterPlaynite(s.PlaynitePath,d.Monitors().Single(r=>Id(r)==s.MonitorId).Get("Name"),s.TimeoutSeconds);}
    if(s.LaunchSteam&&s.Launcher=="Xbox"){Status("Opening Xbox mode on your TV...");var tv=d.Monitors().Single(r=>Id(r)==s.MonitorId);d.EnterXbox(tv.Get("Name"),s.TimeoutSeconds);}
    if(s.LaunchSteam&&s.Launcher=="Steam") {
     Status("Opening Steam Big Picture..."); d.Steam(s.SteamPath);
@@ -184,12 +188,13 @@ public class Engine {
  public void Restore(int timeout) {
   var errors=new List<string>();
   Snapshot snapshot=Active?Storage.Read<Snapshot>("restore.json"):null;bool xbox=snapshot!=null&&snapshot.Launcher=="Xbox";Status(xbox?"Exiting Xbox mode...":"Exiting Steam Big Picture...");
-  try { if(xbox)d.ExitXbox(timeout);else d.ExitBigPicture(timeout); } catch(Exception e) { errors.Add(e.Message); }
+  try { if(snapshot!=null&&snapshot.Launcher=="Playnite")d.ExitPlaynite(snapshot.PlaynitePath,timeout);else if(xbox)d.ExitXbox(timeout);else d.ExitBigPicture(timeout); } catch(Exception e) { errors.Add(e.Message); }
   if(!Active) {
    if(errors.Count>0)throw new InvalidOperationException(string.Join("\n",errors));
    Status("Desktop mode is active. Steam Big Picture is closed."); return;
   }
 
+  if(d is Devices)try{GameProfiles.Restore();}catch(Exception e){errors.Add(e.Message);}
   if(d is Devices)try{VideoSession.Restore();}catch(Exception e){errors.Add(e.Message);}
   Status("Restoring desktop displays...");
   try {
@@ -240,7 +245,7 @@ public static class Program {
   bool created; using(var mutex=new Mutex(true,(args.Contains("--ui-test")||args.Contains("--self-test")?@"Local\SteamCouch.Preview":@"Local\TVLounge.SingleInstance"),out created)) {
    if(!created) { if(args.Contains("--tray"))return 0; MessageBox.Show("SteamCouch is already running. Open Settings from its system tray icon.","SteamCouch"); return 1; }
    try {
-    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run(); return 0; }
+    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run();OptionalTests.Run(); return 0; }
     if(args.Contains("--ui-test")) { string oldData=Storage.Data; string preview=Path.Combine(oldData,"ui-preview"); Directory.CreateDirectory(preview); foreach(string name in new[]{"settings.json","restore.json"}) { string from=Path.Combine(oldData,name),to=Path.Combine(preview,name); if(File.Exists(from))File.Copy(from,to,true); else if(File.Exists(to))File.Delete(to); } Storage.Data=preview; }
     var d=new Devices();if(!args.Contains("--ui-test"))try{VideoSession.RecoverPending();}catch(Exception recovery){Storage.Log("Interrupted video change needs restore: "+recovery.Message);}
     if(args.Contains("--native-validate")) { NativeDisplay.Save(Storage.PathOf("native-validation.json")); return 0; }
@@ -273,7 +278,7 @@ public static class Program {
  }
 }
 public class FakeDevices : IDevices {
- public List<Row> Displays; public List<Row> Outputs; List<Row> original; public bool XboxOpen,FailXboxExit,FailXboxEnter,XboxUnavailable;public int XboxCalls; public bool FailAudio,FailRestore,NeedsReconnect,FailSteamExit,BigPictureOpen; public int SteamCalls,ExitCalls; public List<string> Events=new List<string>();
+ public List<Row> Displays; public List<Row> Outputs; List<Row> original; public bool PlayniteOpen;public bool XboxOpen,FailXboxExit,FailXboxEnter,XboxUnavailable;public int XboxCalls; public bool FailAudio,FailRestore,NeedsReconnect,FailSteamExit,BigPictureOpen; public int SteamCalls,ExitCalls; public List<string> Events=new List<string>();
  public FakeDevices() {
   Displays=new List<Row>{new Row{{"Monitor ID","desk"},{"Name","desktop"},{"Active","Yes"},{"Primary","Yes"},{"Resolution","1920 X 1080"},{"Left-Top","0, 0"}},new Row{{"Monitor ID","tv"},{"Name","tv"},{"Monitor Name","Beyond TV"},{"Active","No"},{"Primary","No"}}};
   Outputs=new List<Row>{new Row{{"Item ID","speakers"},{"Name","Speakers"},{"Device State","Active"},{"Default","Render"},{"Default Multimedia","Render"},{"Default Communications","Render"}}};
@@ -287,6 +292,7 @@ public class FakeDevices : IDevices {
  public void Primary(string id){foreach(var r in Displays)r["Primary"]=r.Get("Monitor ID")==id?"Yes":"No";}
  public void Disable(string id){Displays.Single(r=>r.Get("Monitor ID")==id)["Active"]="No";}
  public void SetAudio(string id,int role){if(FailAudio && id=="tv-audio")throw new Exception("Simulated audio failure"); foreach(var r in Outputs)r[Engine.Roles[role]]=r.Get("Item ID")==id?"Render":"";}
+ public void ValidatePlaynite(string path){}public void EnterPlaynite(string path,string monitor,int timeout){if(Displays.Single(r=>r.Get("Monitor ID")=="tv").Get("Primary")!="Yes"||!Engine.Defaults(Audio()).All(x=>x=="tv-audio"))throw new Exception("Playnite before devices");PlayniteOpen=true;}public void ExitPlaynite(string path,int timeout){Events.Add("exit-playnite");PlayniteOpen=false;}
  public void ValidateXbox(){if(XboxUnavailable)throw new Exception("Xbox unavailable");}public void EnterXbox(string monitor,int timeout){if(FailXboxEnter)throw new Exception("Xbox entry failed");if(Displays.Single(r=>r.Get("Monitor ID")=="tv").Get("Primary")!="Yes"||!Engine.Defaults(Audio()).All(x=>x=="tv-audio"))throw new Exception("Xbox before devices");XboxCalls++;XboxOpen=true;}public void ExitXbox(int timeout){Events.Add("exit-xbox");if(FailXboxExit)throw new Exception("Xbox exit failed");XboxOpen=false;}
  public void Steam(string path){if(Displays.Single(r=>r.Get("Monitor ID")=="tv").Get("Primary")!="Yes"||!Engine.Defaults(Audio()).All(x=>x=="tv-audio"))throw new Exception("Steam launched before devices ready"); SteamCalls++;BigPictureOpen=true;}
  public void ExitBigPicture(int timeout){ExitCalls++;Events.Add("exit-bigpicture");if(FailSteamExit)throw new Exception("Simulated Steam exit failure");BigPictureOpen=false;} public bool PlaceSteam(string monitor){return true;} public void Pause(int milliseconds){}

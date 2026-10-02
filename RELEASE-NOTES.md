@@ -1,13 +1,13 @@
-# SteamCouch 1.5.0
+# SteamCouch 1.6.0 — Optional couch controls
 
-Your TV controls are now available from the controller. Hold View/Select + Y to open the new quick menu, then adjust volume/mute, choose audio output, toggle HDR, select resolution and refresh rate, change Windows VRR assistance, or return to desktop. Change the menu chord to View + A/B/X in Settings.
+All five additions are optional. Existing preferences stay intact, and new automatic behavior stays off until enabled and saved.
 
-View/Select + Xbox is an optional TV/desktop toggle on compatible controller drivers; ordinary-button shortcuts remain available when the Guide button is intercepted.
+- Configure three independently enabled controller actions using Select + A/B/X/Y, with overlapping bindings rejected. Test connected controller buttons, triggers and sticks without activating shortcuts.
+- Opt into automatic desktop return when Steam Big Picture or Playnite fullscreen closes. An eight-second grace period and launcher-child app detection reduce accidental restoration during games.
+- Opt into a Sleep tile and shortcut. Confirm before sleeping; desktop restoration must complete successfully first. Games are not force-closed.
+- Opt into per-game HDR, resolution and refresh-rate profiles. Enable each game separately, select its actual executable and confirm display changes. Previous TV-session settings restore after game exit or disabling the feature.
+- Choose Playnite fullscreen as a third launcher. Playnite uses its documented fullscreen/desktop commands and is not installed automatically.
 
-TV HDR and Windows VRR preferences can be saved in profiles. Display changes require confirmation within 20 seconds and automatically revert if unconfirmed. HDR/VRR preferences restore on desktop return, with recovery data retained for retries and interrupted changes.
+Xbox mode still uses manual desktop return. Launcher-child detection is conservative; background apps can require manual restoration. Protected game executables may not allow profile detection. The quick menu works best with borderless/windowed games.
 
-The menu works best in borderless/windowed games and Big Picture. Exclusive-fullscreen games may minimize. Windows VRR assistance is Windows-wide, requires compatible TV/GPU settings, and may require restarting the game. Steam/Windows can still react to the Guide button.
-
-Includes the locally prepared 1.4.0 features: controller toggling, TV-only keep-awake, setup wizard, profiles, troubleshoot reports, and GitHub updates.
-
-Validation: session/recovery tests; controller hold and navigation tests; isolated rollback, confirmation, failure and retry tests; read-only native HDR/display/audio queries; UI previews and 100–300% DPI checks. Physical controller behavior and HDR/VRR in games still need real-world testing.
+Validation: opt-in defaults; shortcut conflict and sleep-dependency tests; automatic-return grace and active-game guards; full-path game matching; simulated Playnite device ordering/restoration; isolated video rollback/recovery and VRR preservation tests; optional settings persistence; menu/profile/tester previews; main-app DPI checks from 100–300%. PC sleep, live per-game display changes, and a real Playnite installation have not been exercised during verification.

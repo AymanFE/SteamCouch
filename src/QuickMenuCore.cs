@@ -47,7 +47,7 @@ internal static class WindowsVrr {
  public static void Set(string token){using(var key=Registry.CurrentUser.CreateSubKey(Path)){string text=Replace(Read(),token);if(text.Length==0)key.DeleteValue(Name,false);else key.SetValue(Name,text,RegistryValueKind.String);}if(Token(Read())!=token)throw new InvalidOperationException("Windows could not save the VRR preference.");}
 }
 public sealed class VideoRecovery {public ScreenTarget HdrTarget;public bool HdrBefore;public bool VrrSaved;public string VrrBefore;}
-public sealed class VideoPending {public ScreenTarget Target;public VideoMode Mode;public bool IsHdr,Hdr;}
+public sealed class VideoPending {public ScreenTarget Target;public VideoMode Mode;public bool IsHdr,Hdr,AlsoHdr;}
 internal static class VideoSession {
  static readonly object gate=new object();
  static VideoRecovery Read(){return File.Exists(Storage.PathOf("video-session.json"))?Storage.Read<VideoRecovery>("video-session.json"):new VideoRecovery();}
@@ -55,7 +55,7 @@ internal static class VideoSession {
  public static void SetVrr(bool on){lock(gate){var r=Read();if(!r.VrrSaved){r.VrrSaved=true;r.VrrBefore=WindowsVrr.Token(WindowsVrr.Read());Storage.Save("video-session.json",r);}WindowsVrr.Set(on?"VRROptimizeEnable=1":"VRROptimizeEnable=0");}}
  public static void Restore(){lock(gate){var errors=new List<string>();try{RecoverPending();}catch(Exception e){errors.Add(e.Message);}if(!File.Exists(Storage.PathOf("video-session.json"))){if(errors.Count>0)throw new InvalidOperationException(string.Join("\n",errors));return;}var r=Read();if(r.HdrTarget!=null)try{var target=VideoNative.Resolve(r.HdrTarget);if(VideoNative.Hdr(target).Enabled!=r.HdrBefore)VideoNative.Hdr(target,r.HdrBefore);r.HdrTarget=null;Storage.Save("video-session.json",r);}catch(Exception e){errors.Add(e.Message);}if(r.VrrSaved)try{WindowsVrr.Set(r.VrrBefore);r.VrrSaved=false;Storage.Save("video-session.json",r);}catch(Exception e){errors.Add(e.Message);}if(errors.Count>0)throw new InvalidOperationException(string.Join("\n",errors));File.Delete(Storage.PathOf("video-session.json"));}}
  public static void RecoverPending(){if(!File.Exists(Storage.PathOf("pending-video.json")))return;var p=Storage.Read<VideoPending>("pending-video.json");Rollback(p);File.Delete(Storage.PathOf("pending-video.json"));}
- internal static void Rollback(VideoPending p){var target=VideoNative.Resolve(p.Target);if(p.IsHdr){if(VideoNative.Hdr(target).Enabled!=p.Hdr)VideoNative.Hdr(target,p.Hdr);}else if(VideoNative.Current(target.Device).Key!=p.Mode.Key)VideoNative.Apply(target,p.Mode);}
+ internal static void Rollback(VideoPending p){var target=VideoNative.Resolve(p.Target);if(p.IsHdr){if(VideoNative.Hdr(target).Enabled!=p.Hdr)VideoNative.Hdr(target,p.Hdr);}else {if(p.AlsoHdr&&VideoNative.Hdr(target).Enabled!=p.Hdr)VideoNative.Hdr(target,p.Hdr);if(VideoNative.Current(target.Device).Key!=p.Mode.Key)VideoNative.Apply(target,p.Mode);}}
 }
 internal sealed class VideoTrial : IDisposable {
  readonly object gate=new object();readonly VideoPending before;readonly Action<VideoPending> rollback;System.Threading.Timer timer;bool finished;public bool Finished{get{lock(gate)return finished;}}public string Error;public DateTime Deadline;
