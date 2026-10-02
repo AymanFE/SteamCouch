@@ -24,3 +24,23 @@ Steam and the Steam logo are trademarks of Valve Corporation. SteamCouch is an
 independent community utility and is not affiliated with or endorsed by Valve.
 The MIT license grants no rights to Valve's trademarks. Icon generation notes
 are recorded in `assets/README.md`.
+
+## Bundled HDMI-CEC software
+
+Both installer and portable packages include the unmodified native libCEC
+8.1.7 client and library from Pulse-Eight, under GPL-2.0-or-later. The complete
+upstream license and matching native source archive are in `tools/cec/`.
+SteamCouch runs the separate command-line program; it does not link libCEC.
+Its original code remains MIT licensed.
+
+The required Microsoft C++ v14 x64 runtime DLLs (14.51.36247.0) are included
+alongside the native client, under Microsoft's own redistribution/use terms.
+The signed Pulse-Eight USB-CEC driver installer is also included unchanged;
+it carries the Windows Driver Kit DPInst redistributable. Driver setup is
+optional and may require Windows administrator permission. No driver is
+installed merely by extracting or launching the portable app.
+
+See `tools/cec/BUNDLED-NOTICES.txt`, `tools/cec/LICENSE.md` and the source
+archive for provenance, complete upstream notices and dependency details.
+.NET 8 bindings, Python/Node.js bindings, firmware flashers and firmware
+bootloader components are not required by SteamCouch and are not bundled.
