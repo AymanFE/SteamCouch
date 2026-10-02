@@ -1,5 +1,6 @@
-# SteamCouch 1.8.0 — Google TV network control
+# SteamCouch 1.8.1 — Google TV network control
 
+- Include an in-app TV setup tutorial, accessible from TV & audio and the wizard.
 - Add optional Google TV / Android TV network wake and HDMI selection, with an editable TV address and connection port.
 - Add an optional TV-control step to the first-run setup wizard, with connection approval and Wireless debugging code pairing.
 - Include ADB 37.0.1, native dependencies and upstream notices in both installer and portable versions.

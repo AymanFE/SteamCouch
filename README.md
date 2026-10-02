@@ -14,7 +14,7 @@ Steam stays running.
 
 **[Download the latest Windows release](https://github.com/AymanFE/SteamCouch/releases/latest)**
 
-Choose `SteamCouch-v1.8.0-setup-x64.exe` for installation, or `SteamCouch-v1.8.0-windows-x64.zip` for a portable copy. Both include CEC and Google TV software. You do not need the
+Choose `SteamCouch-v1.8.1-setup-x64.exe` for installation, or `SteamCouch-v1.8.1-windows-x64.zip` for a portable copy. Both include CEC and Google TV software. You do not need the
 "Source code" downloads unless you want to build or modify the app.
 
 1. Run the installer, or extract the whole ZIP to a writable folder such as Documents.
@@ -184,7 +184,7 @@ For 4K/120 Hz, check adapter bandwidth before placing it in the video path. Puls
 
 ## Windows installer and portable build
 
-Use `SteamCouch-v1.8.0-setup-x64.exe` for a per-user installation, Start menu shortcut and uninstaller, or extract the portable ZIP and run SteamCouch.exe. Both contain the same CEC client, native library, app-local C++ runtime, driver installer, notices and corresponding native source. Windows 10 version 2004 or newer / Windows 11 supplies .NET Framework 4.8 and the Universal CRT. A separate .NET 8 installation is not needed.
+Use `SteamCouch-v1.8.1-setup-x64.exe` for a per-user installation, Start menu shortcut and uninstaller, or extract the portable ZIP and run SteamCouch.exe. Both contain the same CEC client, native library, app-local C++ runtime, driver installer, notices and corresponding native source. Windows 10 version 2004 or newer / Windows 11 supplies .NET Framework 4.8 and the Universal CRT. A separate .NET 8 installation is not needed.
 
 The installer preserves app data on upgrade/uninstall and blocks replacement while SteamCouch is running or a saved TV restore point is active. Return to desktop mode and exit the tray app before installing an upgrade.
 

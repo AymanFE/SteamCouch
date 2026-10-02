@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.8.1
+
+- Release SteamCouch's private TV connection helper before applying updates, preventing locked dependency files.
+
+- Add a scrollable TV setup guide in TV & audio settings and the setup wizard, including debugging, PC approval, Wireless debugging pairing, HDMI selection and standby troubleshooting.
+
+
 ## 1.8.0
 
 - Add optional Google TV / Android TV network wake and HDMI selection, with an editable TV address and connection port.

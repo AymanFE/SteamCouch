@@ -15,6 +15,21 @@ $installed=New-Object 'System.Collections.Generic.List[string]'
 try {
  $process=if($WaitPid -gt 0){Get-Process -Id $WaitPid -ErrorAction SilentlyContinue}
  if($process -and !$process.WaitForExit(30000)){throw 'SteamCouch did not exit; update postponed.'}
+ # Release only SteamCouch's private ADB server before replacing bundled files.
+ $adb=[IO.Path]::Combine($targetRoot,'tools','adb','adb.exe')
+ if(Test-Path -LiteralPath $adb){
+  $stopInfo=New-Object Diagnostics.ProcessStartInfo
+  $stopInfo.FileName=$adb;$stopInfo.Arguments='-P 5039 kill-server'
+  $stopInfo.UseShellExecute=$false;$stopInfo.CreateNoWindow=$true
+  $stopInfo.RedirectStandardOutput=$true;$stopInfo.RedirectStandardError=$true
+  $stopper=New-Object Diagnostics.Process;$stopper.StartInfo=$stopInfo
+  try{
+   [void]$stopper.Start()
+   $stopOutput=$stopper.StandardOutput.ReadToEndAsync();$stopError=$stopper.StandardError.ReadToEndAsync()
+   if(!$stopper.WaitForExit(5000)){$stopper.Kill();throw 'TV helper did not exit; update postponed.'}
+   if($stopper.ExitCode -ne 0){throw 'Could not release the TV helper; update postponed.'}
+  }finally{$stopper.Dispose()}
+ }
  foreach($file in $items){
   $relative=$file.FullName.Substring($stageRoot.Length+1);$destination=[IO.Path]::GetFullPath([IO.Path]::Combine($targetRoot,$relative));if(!$destination.StartsWith($targetRoot+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Invalid update destination'}
   $old=[IO.Path]::Combine($backup,$relative)
