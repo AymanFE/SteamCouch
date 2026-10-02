@@ -52,14 +52,34 @@ internal class KeyChip : CheckBox {
  protected override void OnCheckedChanged(EventArgs e){base.OnCheckedChanged(e);Invalidate();}
 }
 internal class DarkCombo : Control {
- public List<object> Items=new List<object>(); public int DropDownWidth=650; object selected;
+ public List<object> Items=new List<object>(); public int DropDownWidth=650; object selected;ContextMenuStrip dropDown;
  public event EventHandler SelectedIndexChanged;
  public object SelectedItem {get{return selected;}set{if(!object.Equals(selected,value)){selected=value;Invalidate();if(SelectedIndexChanged!=null)SelectedIndexChanged(this,EventArgs.Empty);}}}
  public override string Text{get{return selected==null?"Select an option":selected.ToString();}set{base.Text=value;}}
  public DarkCombo(){SetStyle(ControlStyles.UserPaint|ControlStyles.AllPaintingInWmPaint|ControlStyles.OptimizedDoubleBuffer|ControlStyles.Selectable,true);BackColor=Theme.Surface;ForeColor=Theme.Text;Font=new Font("Segoe UI",10);TabStop=true;Cursor=Cursors.Hand;AccessibleRole=AccessibleRole.ComboBox;}
  protected override void OnPaint(PaintEventArgs e){e.Graphics.SmoothingMode=SmoothingMode.AntiAlias;e.Graphics.Clear(Theme.Surface);float scale=Theme.Dpi(this)/96f;using(var p=Theme.Round(new RectangleF(1,1,Width-2,Height-2),7*scale)){using(var b=new SolidBrush(Theme.Input))e.Graphics.FillPath(b,p);using(var pen=new Pen(Focused?Theme.Accent:Theme.Border))e.Graphics.DrawPath(pen,p);}var rect=new Rectangle((int)(12*scale),0,Width-(int)(45*scale),Height);TextRenderer.DrawText(e.Graphics,Text,Font,rect,Enabled?Theme.Text:Theme.Muted,TextFormatFlags.Left|TextFormatFlags.VerticalCenter|TextFormatFlags.EndEllipsis);float x=Width-19*scale,y=Height/2f;using(var pen=new Pen(Theme.Muted,1.6f*scale))e.Graphics.DrawLines(pen,new[]{new PointF(x-4*scale,y-2*scale),new PointF(x,y+2*scale),new PointF(x+4*scale,y-2*scale)});}
- void Open(){if(!Enabled||Items.Count==0)return;Focus();var menu=new ContextMenuStrip{BackColor=Theme.Surface,ForeColor=Theme.Text,Font=Font,ShowImageMargin=false,Renderer=new ToolStripProfessionalRenderer(new DarkMenuColors())};int width=Math.Max(Width,Math.Min(Theme.Px(this,DropDownWidth),Screen.FromControl(this).WorkingArea.Width-Theme.Px(this,60)));menu.MinimumSize=new Size(width,0);foreach(var value in Items){object item=value;var option=new ToolStripMenuItem(value.ToString()){ForeColor=Theme.Text,Checked=object.Equals(value,SelectedItem)};option.Click+=delegate{SelectedItem=item;};menu.Items.Add(option);}menu.Closed+=delegate{menu.Dispose();};menu.Show(this,new Point(0,Height+Theme.Px(this,3)));}
- protected override void OnMouseDown(MouseEventArgs e){base.OnMouseDown(e);if(e.Button==MouseButtons.Left)Open();}
+ void Open(){
+  if(!Enabled||Items.Count==0)return;Focus();
+  if(dropDown==null)dropDown=new ContextMenuStrip{BackColor=Theme.Surface,ForeColor=Theme.Text,ShowImageMargin=false,Renderer=new ToolStripProfessionalRenderer(new DarkMenuColors())};
+  if(dropDown.Visible)dropDown.Close();
+  foreach(ToolStripItem item in dropDown.Items.Cast<ToolStripItem>().ToArray())item.Dispose();
+  dropDown.Items.Clear();dropDown.Font=Font;
+  int width=Math.Max(Width,Math.Min(Theme.Px(this,DropDownWidth),Screen.FromControl(this).WorkingArea.Width-Theme.Px(this,60)));dropDown.MinimumSize=new Size(width,0);
+  foreach(var value in Items){object item=value;var option=new ToolStripMenuItem(value.ToString()){ForeColor=Theme.Text,Checked=object.Equals(value,SelectedItem)};option.Click+=delegate{SelectedItem=item;};dropDown.Items.Add(option);}
+  dropDown.Show(this,new Point(0,Height+Theme.Px(this,3)));
+ }
+ internal void CheckMenuLifetime(){
+  object original=SelectedItem;
+  try{
+   for(int cycle=0;cycle<12;cycle++){
+    Open();Application.DoEvents();if(dropDown==null||dropDown.IsDisposed||!dropDown.Visible)throw new InvalidOperationException("Dropdown did not open.");
+    if(cycle%3==0){((ToolStripMenuItem)dropDown.Items[cycle%dropDown.Items.Count]).PerformClick();dropDown.Close(ToolStripDropDownCloseReason.ItemClicked);}
+    else dropDown.Close(cycle%3==1?ToolStripDropDownCloseReason.AppClicked:ToolStripDropDownCloseReason.Keyboard);
+    Application.DoEvents();if(dropDown.IsDisposed)throw new InvalidOperationException("Dropdown was disposed while closing.");
+   }
+  }finally{SelectedItem=original;if(dropDown!=null&&!dropDown.IsDisposed)dropDown.Close();}
+ }
+ protected override void Dispose(bool disposing){if(disposing&&dropDown!=null){dropDown.Dispose();dropDown=null;}base.Dispose(disposing);} protected override void OnMouseDown(MouseEventArgs e){base.OnMouseDown(e);if(e.Button==MouseButtons.Left)Open();}
  protected override void OnKeyDown(KeyEventArgs e){base.OnKeyDown(e);if(e.KeyCode==Keys.Space||e.KeyCode==Keys.Enter||(e.Alt&&e.KeyCode==Keys.Down)){Open();e.Handled=true;}else if(e.KeyCode==Keys.Down||e.KeyCode==Keys.Up){int index=Items.IndexOf(SelectedItem)+(e.KeyCode==Keys.Down?1:-1);if(Items.Count>0)SelectedItem=Items[Math.Max(0,Math.Min(Items.Count-1,index))];e.Handled=true;}}
  protected override bool IsInputKey(Keys keyData){return keyData==Keys.Up||keyData==Keys.Down||base.IsInputKey(keyData);}
  protected override void OnGotFocus(EventArgs e){base.OnGotFocus(e);Invalidate();}protected override void OnLostFocus(EventArgs e){base.OnLostFocus(e);Invalidate();}
@@ -301,6 +321,7 @@ public class MainForm : Form {
   File.WriteAllLines(Storage.PathOf("dpi-test.txt"),report);
  }
  public void WritePreview(){
+  if(Environment.GetCommandLineArgs().Contains("--menu-test")){SelectPage(1);monitors.CheckMenuLifetime();audio.CheckMenuLifetime();SelectPage(2);launcher.CheckMenuLifetime();key.CheckMenuLifetime();File.WriteAllText(Storage.PathOf("menu-test.txt"),"PASS: display, audio, launcher, and key dropdowns each opened and closed 12 times, covering selection, outside-click dismissal, and keyboard dismissal.");}
   if(uiTest)CheckBindings();if(busy)throw new InvalidOperationException("Device refresh has not completed.");
   var report=new List<string>{"Settings binding check: PASS","TV: "+monitors.Text,"Shortcut: "+hint.Text,"Keep monitors: "+keep.Checked,"Icon: "+(appIcon!=null)};
   foreach(var size in new[]{new Size(1100,740),new Size(960,640)}){Size=new Size(Theme.Px(this,size.Width),Theme.Px(this,size.Height));PerformLayout();for(int page=0;page<3;page++){SelectPage(page);PerformLayout();using(var bitmap=new Bitmap(Width,Height)){DrawToBitmap(bitmap,new Rectangle(0,0,Width,Height));bitmap.Save(Storage.PathOf("preview-"+page+"-"+size.Width+".png"));}bool valid=footer.ClientRectangle.Contains(save.Bounds)&&footer.ClientRectangle.Contains(restore.Bounds)&&!panel.HorizontalScroll.Visible&&!panel.VerticalScroll.Visible;report.Add(size.Width+" page "+page+" layout: "+(valid?"PASS":"FAIL"));if(!valid){File.WriteAllLines(Storage.PathOf("ui-test.txt"),report);throw new InvalidOperationException("Preview layout overflow; DPI="+DeviceDpi+" sidebar="+sidebar.Width+" footer="+footer.Size+" save="+save.Bounds);}}}

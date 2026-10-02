@@ -2,6 +2,8 @@
 
 ## 1.3.0 — Xbox-mode support
 
+- Fix dropdown menus crashing when dismissed by a click outside the menu.
+
 - Choose Steam Big Picture or Xbox mode in Settings.
 - Verify Xbox-mode entry and the selected primary display.
 - Persist the chosen launcher for correct recovery after app restart.
