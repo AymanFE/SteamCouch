@@ -14,7 +14,7 @@ using Microsoft.Win32;
 
 namespace TVLounge {
 public class Settings {
- public bool GoogleTvEnabled=false;public string GoogleTvHost="",GoogleTvMac="",GoogleTvInputUri="";public int GoogleTvHdmiPort=1,GoogleTvWakeDelay=3;
+ public string OtherMonitorMode="";public bool GoogleTvPowerOff=false;public bool GoogleTvEnabled=false;public string GoogleTvHost="",GoogleTvMac="",GoogleTvInputUri="";public int GoogleTvHdmiPort=1,GoogleTvWakeDelay=3;
  public bool CecEnabled=false;public string CecPath="";public int CecHdmiPort=1,CecWakeDelay=3;
  public string MonitorId = "";
  public string AudioId = "";
@@ -36,7 +36,7 @@ public class Snapshot {
  public List<Row> Monitors = new List<Row>();
  public string[] Audio = new string[3];
  public string DisplayFile;
- public string Launcher;public string SessionMonitorId,PlaynitePath;public bool LauncherStarted;
+ public bool BlackoutOthers;public List<MonitorPowerState> MonitorPower=new List<MonitorPowerState>();public string GoogleTvStandbyHost;public string Launcher;public string SessionMonitorId,PlaynitePath;public bool LauncherStarted;
 }
 public static class Storage {
  public static string Root = AppDomain.CurrentDomain.BaseDirectory;
@@ -51,7 +51,7 @@ public static class Storage {
  public static void Log(string value) { File.AppendAllText(PathOf("activity.log"),DateTime.Now.ToString("s")+" "+value+Environment.NewLine); }
 }
 public interface IDevices {
- void WakeTv(Settings settings); List<Row> Monitors(); List<Row> Audio();
+ List<MonitorPowerState> CaptureMonitorPower(string tvId);void SetMonitorPower(MonitorPowerState state,uint power);void ReleaseMonitorPower();void StandbyTv(string host);void WakeTv(Settings settings); List<Row> Monitors(); List<Row> Audio();
  void SaveDisplays(string file); void LoadDisplays(string file); void ReconnectDisplays();
  void Enable(string id); void Primary(string id); void Disable(string id); void SetAudio(string id,int role);
  void ValidatePlaynite(string path);void EnterPlaynite(string path,string monitor,int timeout);void ExitPlaynite(string path,int timeout);
@@ -88,7 +88,7 @@ public class Devices : IDevices {
   return rows;
   } finally { if(File.Exists(file))File.Delete(file); }
  }
- public void WakeTv(Settings s){if(s.GoogleTvEnabled)GoogleTv.Wake(s);else CecClient.Wake(s);}
+ public List<MonitorPowerState> CaptureMonitorPower(string tvId){return MonitorPower.Capture(Monitors(),tvId);}public void SetMonitorPower(MonitorPowerState state,uint power){MonitorPower.Set(state,power,Monitors());}public void ReleaseMonitorPower(){MonitorPower.Release();}public void StandbyTv(string host){GoogleTv.Standby(host);}public void WakeTv(Settings s){if(s.GoogleTvEnabled)GoogleTv.Wake(s);else CecClient.Wake(s);}
  public List<Row> Monitors() { return Read(display,"monitors.csv","/HideInactiveMonitors 0 /ShowDisconnectedMonitors 1"); }
  public List<Row> Audio() { return Read(audio,"audio.csv","/ShowUnpluggedDevices 1 /ShowDisabledDevices 1 /SaveFileEncoding 3").Where(r=>r.Get("Type")=="Device" && r.Get("Direction")=="Render").ToList(); }
  public void SaveDisplays(string file) { NativeDisplay.Save(file+".ccd.json"); Run(display,"/SaveConfig "+Quote(file)); if(!File.Exists(file)||new FileInfo(file).Length==0) throw new IOException("Could not save display restore point."); }
@@ -140,6 +140,7 @@ public class Engine {
   if(Active) throw new InvalidOperationException("Restore desktop first; a restore point is already present.");
   if(s.TimeoutSeconds<3 || s.TimeoutSeconds>120) throw new InvalidOperationException("Readiness timeout must be 3 to 120 seconds.");
   if(string.IsNullOrWhiteSpace(s.MonitorId))throw new InvalidOperationException("Choose your TV before enabling TV mode.");
+  string otherMode=OtherMonitors.Resolve(s);
   if(s.CecEnabled||s.GoogleTvEnabled){Status("Waking TV and selecting HDMI input...");d.WakeTv(s);}
   var monitors=d.Monitors(); var target=monitors.SingleOrDefault(r=>Id(r)==s.MonitorId);
   if(target==null || string.IsNullOrEmpty(s.MonitorId)) throw new InvalidOperationException("Select an available TV in Settings. Check its cable and power.");
@@ -157,7 +158,7 @@ public class Engine {
    Wait(()=>d.Monitors().Any(r=>Id(r)==s.MonitorId && IsOn(r)),s.TimeoutSeconds,"Windows could not enable the TV. Check its power and cable.");
    Status("Making TV the main display..."); d.Primary(s.MonitorId);
    Wait(()=>d.Monitors().Any(r=>Id(r)==s.MonitorId && r.Get("Primary")=="Yes"),s.TimeoutSeconds,"Windows could not make the TV primary.");
-   if(!s.KeepOthers) {
+   if(otherMode=="Disconnect") {
     foreach(var m in d.Monitors().Where(r=>Id(r)!=s.MonitorId && IsOn(r))) d.Disable(Id(m));
     Wait(()=>d.Monitors().Where(IsOn).All(r=>Id(r)==s.MonitorId),s.TimeoutSeconds,"Some other monitors remained enabled.");
    } else {
@@ -183,6 +184,9 @@ public class Engine {
     Status("Opening Steam Big Picture..."); d.Steam(s.SteamPath);
     int steamReady=0; Wait(()=> { var tv=d.Monitors().Single(r=>Id(r)==s.MonitorId); if(tv.Get("Primary")!="Yes"){d.Primary(s.MonitorId);steamReady=0;} steamReady=d.PlaceSteam(tv.Get("Name"))?steamReady+1:0; return steamReady>=3; },s.TimeoutSeconds,"Steam Big Picture did not become ready. Finish any Steam update or sign-in, then try again.");
    }
+   if(otherMode=="PowerOff"){snapshot.MonitorPower=d.CaptureMonitorPower(s.MonitorId);Storage.Save("restore.json",snapshot);foreach(var power in snapshot.MonitorPower)d.SetMonitorPower(power,4);}
+   snapshot.BlackoutOthers=otherMode=="Black";Storage.Save("restore.json",snapshot);
+   if(s.GoogleTvEnabled&&s.GoogleTvPowerOff){snapshot.GoogleTvStandbyHost=GoogleTv.Endpoint(s.GoogleTvHost);Storage.Save("restore.json",snapshot);}
    Storage.Log("TV mode activated; keep other monitors="+s.KeepOthers); Status("TV mode is on. Press the shortcut again to restore desktop.");
   } catch(Exception error) {
    Storage.Log("Activation failed: "+error.Message);
@@ -200,6 +204,7 @@ public class Engine {
    Status("Desktop mode is active. Steam Big Picture is closed."); return;
   }
 
+  foreach(var power in snapshot.MonitorPower??new List<MonitorPowerState>())try{d.SetMonitorPower(power,power.Power);}catch(Exception e){errors.Add(e.Message);}
   if(d is Devices)try{GameProfiles.Restore();}catch(Exception e){errors.Add(e.Message);}
   if(d is Devices)try{VideoSession.Restore();}catch(Exception e){errors.Add(e.Message);}
   Status("Restoring desktop displays...");
@@ -217,7 +222,9 @@ public class Engine {
    Wait(()=>Defaults(d.Audio()).SequenceEqual(snapshot.Audio),timeout,"Playback audio could not be restored.");
   } catch(Exception e) { errors.Add(e.Message); }
   if(errors.Count>0) throw new InvalidOperationException(string.Join("\n",errors)+"\nRestore point retained. Reconnect devices and click Restore desktop to retry.");
-  File.Delete(Storage.PathOf("restore.json")); Storage.Log("Desktop restored."); Status("Desktop restored. Ready for TV mode.");
+  File.Delete(Storage.PathOf("restore.json"));d.ReleaseMonitorPower(); Storage.Log("Desktop restored.");
+  if(!string.IsNullOrWhiteSpace(snapshot.GoogleTvStandbyHost)){Status("Desktop restored. Putting TV into standby...");try{d.StandbyTv(snapshot.GoogleTvStandbyHost);}catch(Exception e){Storage.Log("TV standby failed after desktop restoration: "+e.Message);throw new InvalidOperationException("Your desktop displays and audio were restored, but the TV could not be put into standby. "+e.Message);}}
+  Status("Desktop restored. Ready for TV mode.");
  }
  public static bool Matches(List<Row> saved,List<Row> actual) {
   foreach(var old in saved) {
@@ -249,11 +256,11 @@ public static class Program {
  [STAThread] public static int Main(string[] args) {
   if(args.Contains("--cec-fixture"))return CecClient.Fixture(args);
   Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
-  bool created; using(var mutex=new Mutex(true,(args.Contains("--ui-test")||args.Contains("--self-test")||args.Contains("--placement-test")||args.Contains("--steam-placement-test")||args.Contains("--inventory-test")?@"Local\SteamCouch.Preview":@"Local\TVLounge.SingleInstance"),out created)) {
+  bool created; using(var mutex=new Mutex(true,(args.Contains("--ui-test")||args.Contains("--self-test")||args.Contains("--placement-test")||args.Contains("--steam-placement-test")||args.Contains("--inventory-test")||args.Contains("--monitor-power-check")?@"Local\SteamCouch.Preview":@"Local\TVLounge.SingleInstance"),out created)) {
    if(!created) { if(args.Contains("--tray"))return 0; MessageBox.Show("SteamCouch is already running. Open Settings from its system tray icon.","SteamCouch"); return 1; }
    try {
     if(args.Contains("--placement-test")){WindowPlacement.Test();return 0;}
-    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run();OptionalTests.Run();CecClient.Test();GoogleTv.Test(); return 0; }
+    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run();OptionalTests.Run();CecClient.Test();GoogleTv.Test();BlackScreens.Test(); return 0; }
     if(args.Contains("--ui-test")) { string oldData=Storage.Data; string preview=Path.Combine(oldData,"ui-preview"); Directory.CreateDirectory(preview); foreach(string name in new[]{"settings.json","restore.json"}) { string from=Path.Combine(oldData,name),to=Path.Combine(preview,name); if(File.Exists(from))File.Copy(from,to,true); else if(File.Exists(to))File.Delete(to); } Storage.Data=preview; }
     var d=new Devices();if(!args.Contains("--ui-test"))try{VideoSession.RecoverPending();}catch(Exception recovery){Storage.Log("Interrupted video change needs restore: "+recovery.Message);}
     if(args.Contains("--inventory-test")){Task.WaitAll(Enumerable.Range(0,6).Select(i=>Task.Run(()=>{if(d.Monitors().Count==0||d.Audio().Count==0)throw new Exception("Empty concurrent inventory");})).ToArray());File.WriteAllText(Storage.PathOf("inventory-test.txt"),"PASS: six concurrent display/audio inventories completed without file collisions.");return 0;}
@@ -267,6 +274,7 @@ public static class Program {
     if(args.Contains("--native-validate")) { NativeDisplay.Save(Storage.PathOf("native-validation.json")); return 0; }
     if(args.Contains("--diagnose")) { Storage.Save("diagnostics.json",new{Monitors=d.Monitors(),Audio=d.Audio()}); return 0; }
     var s=File.Exists(Storage.PathOf("settings.json"))?Storage.Read<Settings>("settings.json"):new Settings();
+    if(args.Contains("--monitor-power-check")){try{var power=d.CaptureMonitorPower(s.MonitorId);File.WriteAllText(Storage.PathOf("monitor-power-check.txt"),"PASS: "+power.Count+" non-TV physical monitors report power-on state through DDC/CI. Read-only check; no power commands sent.");}finally{d.ReleaseMonitorPower();}return 0;}
     if(args.Contains("--xbox-mode-test")){bool before=XboxClient.Active;try{XboxClient.Set(true,10);if(!XboxClient.Active)throw new Exception("Xbox did not enter");XboxClient.Set(false,10);File.WriteAllText(Storage.PathOf("xbox-mode-test.txt"),"PASS: actual Xbox-mode entry and exit verified through the Windows gaming-experience API.");}finally{if(XboxClient.Active!=before)XboxClient.Set(before,10);}return 0;}
     if(args.Contains("--startup-sync")){StartupRegistration.Set(s.Startup);return 0;}
     if(args.Contains("--steam-exit-test")) {
@@ -293,7 +301,7 @@ public static class Program {
   }
  }
 }
-public class FakeDevices : IDevices { public bool FailTvWake;
+public class FakeDevices : IDevices { public bool FailMonitorOff;public List<MonitorPowerState> CaptureMonitorPower(string tvId){return Displays.Where(r=>Engine.IsOn(r)&&r.Get("Monitor ID")!=tvId).Select(r=>new MonitorPowerState{MonitorId=r.Get("Monitor ID"),Device=r.Get("Name"),Power=1}).ToList();}public void SetMonitorPower(MonitorPowerState state,uint power){Events.Add("monitor-power:"+state.MonitorId+":"+power);if(power==4&&FailMonitorOff)throw new Exception("Power command rejected");}public void ReleaseMonitorPower(){} public bool FailTvWake,FailTvStandby;public void StandbyTv(string host){if(Displays[0].Get("Primary")!="Yes"||!Engine.IsOn(Displays[0])||!Engine.Defaults(Audio()).All(x=>x=="speakers"))throw new Exception("TV standby before desktop restoration");Events.Add("tv-standby:"+host);if(FailTvStandby)throw new Exception("TV disconnected");}
  public void WakeTv(Settings s){Events.Add(s.GoogleTvEnabled?"google-tv-wake":"cec-wake");if(FailTvWake)throw new Exception("TV wake failed");}
  public List<Row> Displays; public List<Row> Outputs; List<Row> original; public bool PlayniteOpen;public bool XboxOpen,FailXboxExit,FailXboxEnter,XboxUnavailable;public int XboxCalls; public bool FailAudio,FailRestore,NeedsReconnect,FailSteamExit,BigPictureOpen; public int SteamCalls,ExitCalls; public List<string> Events=new List<string>();
  public FakeDevices() {
@@ -326,6 +334,12 @@ public static class SelfTest {
    }
    var networkTv=new FakeDevices();var networkEngine=new Engine(networkTv);networkEngine.Activate(new Settings{MonitorId="tv",LaunchSteam=false,GoogleTvEnabled=true,TimeoutSeconds=3});Assert(networkTv.Events.First()=="google-tv-wake","Google TV wakes before display changes");networkEngine.Restore(3);
    var noNetworkTv=new FakeDevices{FailTvWake=true};var networkFailure=new Engine(noNetworkTv);bool networkThrew=false;try{networkFailure.Activate(new Settings{MonitorId="tv",LaunchSteam=false,GoogleTvEnabled=true,TimeoutSeconds=3});}catch{networkThrew=true;}Assert(networkThrew&&!networkFailure.Active&&noNetworkTv.Events.SequenceEqual(new[]{"google-tv-wake"})&&Engine.IsOn(noNetworkTv.Displays[0])&&!Engine.IsOn(noNetworkTv.Displays[1])&&Engine.Defaults(noNetworkTv.Audio()).All(x=>x=="speakers"),"Network TV failure leaves desktop unchanged");report.Add("PASS: Google TV wake ordering and no desktop changes on connection failure");
+   foreach(bool powerOff in new[]{false,true}){var tvOff=new FakeDevices();var offEngine=new Engine(tvOff);offEngine.Activate(new Settings{MonitorId="tv",LaunchSteam=false,GoogleTvEnabled=true,GoogleTvPowerOff=powerOff,GoogleTvHost="192.0.2.10",TimeoutSeconds=3});new Engine(tvOff).Restore(3);Assert(tvOff.Events.Any(x=>x.StartsWith("tv-standby:"))==powerOff,"TV standby opt-in persists across restart");if(powerOff)Assert(tvOff.Events.Last()=="tv-standby:192.0.2.10:5555"&&!offEngine.Active,"Standby after desktop restore");}
+   var standbyRetry=new FakeDevices();var sr=new Engine(standbyRetry);sr.Activate(new Settings{MonitorId="tv",LaunchSteam=false,GoogleTvEnabled=true,GoogleTvPowerOff=true,GoogleTvHost="192.0.2.10",TimeoutSeconds=3});standbyRetry.FailSteamExit=true;try{sr.Restore(3);}catch{}Assert(sr.Active&&!standbyRetry.Events.Any(x=>x.StartsWith("tv-standby:")),"No standby on incomplete restore");standbyRetry.FailSteamExit=false;standbyRetry.FailTvStandby=true;bool standbyFailed=false;try{sr.Restore(3);}catch(InvalidOperationException e){standbyFailed=e.Message.StartsWith("Your desktop displays");}Assert(standbyFailed&&!sr.Active&&Engine.Defaults(standbyRetry.Audio()).All(x=>x=="speakers"),"Standby failure keeps restored desktop");new Engine(standbyRetry).Restore(3);Assert(standbyRetry.Events.Count(x=>x.StartsWith("tv-standby:"))==1,"Desktop-only restore never sends standby again");
+   var standbyRollback=new FakeDevices{FailAudio=true};var sb=new Engine(standbyRollback);try{sb.Activate(new Settings{MonitorId="tv",LaunchSteam=false,GoogleTvEnabled=true,GoogleTvPowerOff=true,GoogleTvHost="192.0.2.10",TimeoutSeconds=3});}catch{}Assert(!sb.Active&&!standbyRollback.Events.Any(x=>x.StartsWith("tv-standby:")),"Activation rollback does not turn off TV");
+   var disabledNetwork=new FakeDevices();var dn=new Engine(disabledNetwork);dn.Activate(new Settings{MonitorId="tv",LaunchSteam=false,GoogleTvEnabled=false,GoogleTvPowerOff=true,TimeoutSeconds=3});dn.Restore(3);Assert(!disabledNetwork.Events.Any(x=>x.StartsWith("tv-standby:")),"Disabled network control suppresses standby");report.Add("PASS: optional TV standby after desktop/audio restore; restart recovery; disabled preference; rollback and restore-failure safety; standby failure cannot undo desktop restoration");
+   foreach(string monitorMode in OtherMonitors.Modes){var m=new FakeDevices();var e=new Engine(m);e.Activate(new Settings{MonitorId="tv",LaunchSteam=false,KeepOthers=false,OtherMonitorMode=monitorMode,TimeoutSeconds=3});Assert(Engine.IsOn(m.Displays[0])==(monitorMode!="Disconnect"),"Monitor behavior overrides legacy flag");var snap=Storage.Read<Snapshot>("restore.json");Assert(snap.BlackoutOthers==(monitorMode=="Black"),"Black cover session saved");Assert(m.Events.Contains("monitor-power:desk:4")==(monitorMode=="PowerOff"),"Targeted monitor power option");new Engine(m).Restore(3);if(monitorMode=="PowerOff")Assert(m.Events.IndexOf("monitor-power:desk:1")<m.Events.IndexOf("restore-displays"),"Wake desktop monitors before restoring layout");}
+   var powerReject=new FakeDevices{FailMonitorOff=true};var pe=new Engine(powerReject);bool powerFailed=false;try{pe.Activate(new Settings{MonitorId="tv",LaunchSteam=false,OtherMonitorMode="PowerOff",TimeoutSeconds=3});}catch{powerFailed=true;}Assert(powerFailed&&!pe.Active&&powerReject.Events.Contains("monitor-power:desk:1")&&Engine.IsOn(powerReject.Displays[0]),"Power failure rollback wakes desktop");report.Add("PASS: keep/disconnect/black/power-off monitor choices; TV excluded from power requests; persistent power recovery; wake-before-layout ordering; rejected power command rollback");
    var failing=new FakeDevices{FailAudio=true}; var failedEngine=new Engine(failing); bool threw=false;
    try{failedEngine.Activate(new Settings{MonitorId="tv",LaunchSteam=false,TimeoutSeconds=3});}catch{threw=true;}
    Assert(threw&&!failedEngine.Active&&!Engine.IsOn(failing.Displays[1]),"rollback on audio failure"); report.Add("PASS: activation failure rolls back");

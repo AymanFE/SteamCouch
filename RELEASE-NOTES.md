@@ -1,16 +1,13 @@
-# SteamCouch 1.8.1 — Google TV network control
+# SteamCouch 1.9.0 — Monitor choices and optional TV standby
 
-- Add a Windows installer with per-user installation, Start menu shortcut and uninstaller, alongside the portable ZIP.
-- Include native libCEC 8.1.7, its C++ dependencies and the optional USB-CEC driver installer in both downloads; compatible CEC hardware is still required.
-- Include an in-app TV setup tutorial, accessible from TV & audio and the wizard.
-- Add optional Google TV / Android TV network wake and HDMI selection, with an editable TV address and connection port.
-- Add an optional TV-control step to the first-run setup wizard, with connection approval and Wireless debugging code pairing.
-- Include ADB 37.0.1, native dependencies and upstream notices in both installer and portable versions.
-- Support optional Wake-on-LAN, wake delay, and a model-specific Android input URI.
-- Preserve network preferences in display profiles. Connection failures stop activation before Windows display/audio changes.
-- Keep CEC available as an alternative; both methods are off by default.
-- Close SteamCouch's private TV connection helper before app/installer upgrades to prevent locked-file failures.
+- Choose Leave on, Disconnect, Turn off (DDC/CI), or Black screens for other monitors during TV mode.
+- Keep black-covered monitors connected with brightness unchanged; covers follow layout changes and disappear on return. Double-click a black cover to return to desktop.
+- Exclude the selected TV from other-monitor actions.
+- Save monitor power states before changing them and wake desktop monitors before restoring the saved layout.
+- Add an optional Turn off TV when returning to desktop checkbox in Google TV network settings and setup wizard; off by default.
+- Send TV standby only after successful desktop restoration. Activation rollback and incomplete restoration leave the TV on; TV-command failures cannot undo desktop recovery.
+- Save the preferences in display profiles and document them in the in-app setup guide.
 
-Requires TV debugging approval and an available network connection. Standby wake and HDMI input support depend on TV settings/firmware. Returning to desktop leaves the TV on.
+Monitor power control requires compatible DDC/CI hardware/firmware. Some powered-off displays need their physical power button for recovery. TV standby requires network authorization; waking that TV again still depends on its network standby settings.
 
-Validation: bundled ADB native smoke test; input validation; wake ordering; unauthorized/error handling; simulated activation failure safety; profile/settings persistence; UI/DPI checks; installer install/reinstall/uninstall checks. Physical testing: the authorized TCL connection and its model-specific HDMI 1 route passed through the installed app. Standby wake failed with the current TV power settings; network standby configuration still needs verification.
+Validation: core regression suite; all monitor choices; TV exclusion; profile/settings persistence; targeted power recovery and rejected-command rollback; TV standby opt-in/restart/error paths; native black-window placement on connected displays; UI/DPI checks. A read-only check found DDC/CI power status available on three connected non-TV monitor panels. No physical monitor-off or TV standby commands were sent for this update.

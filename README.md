@@ -14,7 +14,7 @@ Steam stays running.
 
 **[Download the latest Windows release](https://github.com/AymanFE/SteamCouch/releases/latest)**
 
-Choose `SteamCouch-v1.8.1-setup-x64.exe` for installation, or `SteamCouch-v1.8.1-windows-x64.zip` for a portable copy. Both include CEC and Google TV software. You do not need the
+Choose `SteamCouch-v1.9.0-setup-x64.exe` for installation, or `SteamCouch-v1.9.0-windows-x64.zip` for a portable copy. Both include CEC and Google TV software. You do not need the
 "Source code" downloads unless you want to build or modify the app.
 
 1. Run the installer, or extract the whole ZIP to a writable folder such as Documents.
@@ -178,13 +178,13 @@ Under **TV & audio**, optionally enable **Turn on TV & select HDMI automatically
 
 A libCEC-compatible physical CEC interface is still required. Most GPU HDMI outputs lack CEC, so a compatible USB-CEC adapter is commonly needed. Enable CEC on your TV. For Google TV / Android TV, you can instead use the network option described below.
 
-**Test TV power & input** sends real commands without changing your Windows display layout. Check that your TV honors the request. **Set up adapter driver** launches the included official driver installer if needed and may require Windows permission. The installer has the same optional driver task. Neither distribution installs drivers automatically. Other CEC apps can occupy the adapter; close them if it is busy. Desktop return leaves the TV on.
+**Test TV power & input** sends real commands without changing your Windows display layout. Check that your TV honors the request. **Set up adapter driver** launches the included official driver installer if needed and may require Windows permission. The installer has the same optional driver task. Neither distribution installs drivers automatically. Other CEC apps can occupy the adapter; close them if it is busy. Desktop return leaves the TV on by default.
 
 For 4K/120 Hz, check adapter bandwidth before placing it in the video path. Pulse-Eight documents a [spare-HDMI-port arrangement](https://support.pulse-eight.com/support/solutions/articles/30000053070/thumbs_up); active-source addressing must point to the PC's video input. Receiver/soundbar chains can need additional configuration.
 
 ## Windows installer and portable build
 
-Use `SteamCouch-v1.8.1-setup-x64.exe` for a per-user installation, Start menu shortcut and uninstaller, or extract the portable ZIP and run SteamCouch.exe. Both contain the same CEC client, native library, app-local C++ runtime, driver installer, notices and corresponding native source. Windows 10 version 2004 or newer / Windows 11 supplies .NET Framework 4.8 and the Universal CRT. A separate .NET 8 installation is not needed.
+Use `SteamCouch-v1.9.0-setup-x64.exe` for a per-user installation, Start menu shortcut and uninstaller, or extract the portable ZIP and run SteamCouch.exe. Both contain the same CEC client, native library, app-local C++ runtime, driver installer, notices and corresponding native source. Windows 10 version 2004 or newer / Windows 11 supplies .NET Framework 4.8 and the Universal CRT. A separate .NET 8 installation is not needed.
 
 The installer preserves app data on upgrade/uninstall and blocks replacement while SteamCouch is running or a saved TV restore point is active. Return to desktop mode and exit the tray app before installing an upgrade.
 
@@ -200,8 +200,24 @@ The setup wizard includes an optional TV power and HDMI step. Enter your own TV 
 
 ADB 37.0.1 and its native Windows dependencies/notices are included in both distributions. SteamCouch uses a separate local ADB server port (5039) and an app-specific key directory. Pairing codes are not saved. Display profiles retain these TV preferences.
 
-Activation sends wake (not a power toggle), waits, and selects HDMI before changing Windows displays. A connection/command failure stops activation and leaves your desktop unchanged. Returning to desktop leaves the TV on.
+Activation sends wake (not a power toggle), waits, and selects HDMI before changing Windows displays. A connection/command failure stops activation and leaves your desktop unchanged. Returning to desktop leaves the TV on unless the optional network-control standby setting is enabled.
 
 Wake from standby requires the TV to keep its network/debugging service available, often using network standby or TCL's Screenless service. An optional MAC address sends a Wake-on-LAN packet if your TV supports it. A fully powered-off TV cannot be guaranteed to wake over the network. HDMI input key support varies by firmware; an optional Android passthrough input URI is available for models that ignore HDMI keys. SteamCouch cannot infer a model-specific URI reliably. Use only your own TV's input URI.
 
 Do not forward debugging ports to the internet. You can revoke this PC's authorization in the TV's Developer options.
+## Other monitors during TV mode
+
+Choose a behavior under **TV & audio → Other monitors during TV mode**, or in the setup wizard:
+
+- **Leave other monitors on:** keep using them normally.
+- **Disconnect other monitors:** Windows disables them during TV mode and restores the saved layout on return.
+- **Turn off other monitors (DDC/CI):** send a targeted power command to supported monitors, leaving the TV on. Enable DDC/CI in each monitor's own menu. The app records the previous power state before sending commands and wakes the monitors before restoring Windows displays. Firmware can disconnect powered-off screens or refuse wake requests; use the monitor's power button and retry restoration if needed.
+- **Black screens — keep connected:** cover other connected monitors with borderless black windows. This does not change brightness or disconnect displays. Covers disappear on desktop return; double-click any cover (or use the controller/keyboard shortcut) to return. The covers follow display layout changes and exclude the TV.
+
+Existing preferences migrate to Leave on or Disconnect. Profiles retain the new choice. Hardware power changes and recovery are recorded in the TV session for restart recovery. Black covers are owned by SteamCouch and disappear if the app exits.
+
+## Turn off the TV on desktop return
+
+Under **TV & audio → Google TV**, optionally check **Turn off TV when returning to desktop**. It is off by default and only available when Google TV network control is enabled; the wizard has the same choice. It applies to the next TV session.
+
+The selected TV address is saved with that session. After the gaming launcher closes and desktop display/audio restoration succeeds, SteamCouch sends the TV a standby command (not a power toggle). An activation rollback, incomplete restore, or desktop-only Restore command does not send standby. If TV standby fails, the restored desktop remains usable and the app reports the TV failure. Network authorization and firmware support are required. The existing standby-wake requirements still apply when entering TV mode again.

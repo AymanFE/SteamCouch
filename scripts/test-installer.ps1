@@ -1,4 +1,4 @@
-param([string]$Version='1.8.1')
+param([string]$Version='1.9.0')
 $ErrorActionPreference='Stop'
 if($Version -notmatch '^\d+\.\d+\.\d+$'){throw 'Invalid test version'}
 $key='HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{95DFF2A4-0BBB-42D2-BE69-CCBF224D7AA7}_is1'

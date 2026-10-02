@@ -14,6 +14,6 @@ public partial class MainForm {
  void ReadCec(Settings s){s.CecEnabled=cecEnabled.Checked;s.CecPath=string.Equals(cecPath.Text.Trim(),CecClient.Bundled,StringComparison.OrdinalIgnoreCase)?"":cecPath.Text.Trim();s.CecHdmiPort=int.Parse(((Choice)cecInput.SelectedItem).Id);s.CecWakeDelay=int.Parse(((Choice)cecDelay.SelectedItem).Id);}
  void SaveCec(Settings s){ReadCec(s);if(s.CecEnabled&&!uiTest)CecClient.Validate(s);}
  void CheckCecBindings(){string file=Storage.PathOf("settings.json"),original=System.IO.File.ReadAllText(file);var before=Clone(settings);try{cecEnabled.Checked=true;cecPath.Text="example\\cec-client.exe";cecInput.SelectedItem=cecInput.Items[3];cecDelay.SelectedItem=cecDelay.Items[7];Save();var saved=Storage.Read<Settings>("settings.json");if(!saved.CecEnabled||saved.CecHdmiPort!=4||saved.CecWakeDelay!=7||saved.CecPath!=cecPath.Text)throw new Exception("CEC settings did not persist");}finally{System.IO.File.WriteAllText(file,original);settings=before;SetCec(before);}}
- void LayoutCec(int width){cecCard.SetBounds(Theme.Px(this,32),Theme.Px(this,1022),width-Theme.Px(this,64),Theme.Px(this,300));cecCard.Visible=currentPage==1;PlaceLogicalChildren(cecCard);if(currentPage==1)content.Height=cecCard.Bottom+Theme.Px(this,8);}
+ void LayoutCec(int width){cecCard.SetBounds(Theme.Px(this,32),Theme.Px(this,1094),width-Theme.Px(this,64),Theme.Px(this,300));cecCard.Visible=currentPage==1;PlaceLogicalChildren(cecCard);if(currentPage==1)content.Height=cecCard.Bottom+Theme.Px(this,8);}
 }
 }
