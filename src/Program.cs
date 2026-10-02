@@ -383,13 +383,37 @@ namespace TVLounge {
 internal static class ControllerGameBar {
  const string Path=@"Software\Microsoft\GameBar";
  const string Value="UseNexusForGameBarEnabled";
- public static bool Enabled {get{return Read(Path);}}
+ class OverlayState {public bool Nexus=true,Connect=true,NexusExists=false,ConnectExists=false;}
+ static string RunHelper(string action,string extra){
+  string helper=System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory,@"tools\windows\controller-overlays.ps1");
+  string shell=System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),@"System32\WindowsPowerShell\v1.0\powershell.exe");
+  if(!File.Exists(helper))throw new FileNotFoundException("The controller settings helper is missing. Extract all SteamCouch files together.",helper);
+  using(var process=Process.Start(new ProcessStartInfo(shell,"-NoProfile -NonInteractive -ExecutionPolicy Bypass -File "+Devices.Quote(helper)+" -Action "+action+extra){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true})){
+   var output=process.StandardOutput.ReadToEndAsync();var error=process.StandardError.ReadToEndAsync();
+   if(!process.WaitForExit(10000)){process.Kill();throw new TimeoutException("Windows controller settings did not respond.");}
+   if(process.ExitCode!=0)throw new IOException("Could not update Controller Bar: "+error.Result.Trim());
+   return output.Result.Trim();
+  }
+ }
+ static OverlayState ReadLocal(){return new JavaScriptSerializer().Deserialize<OverlayState>(RunHelper("Read",""));}
+ public static bool Enabled {get{try{var state=ReadLocal();return Read(Path)||state.Nexus||state.Connect;}catch(Exception error){Storage.Log(error.ToString());return true;}}}
  static bool Read(string path){using(var key=Microsoft.Win32.Registry.CurrentUser.OpenSubKey(path)){return key==null||System.Convert.ToInt32(key.GetValue(Value,1))!=0;}}
  static void Write(string path,bool enabled){using(var key=Microsoft.Win32.Registry.CurrentUser.CreateSubKey(path))key.SetValue(Value,enabled?1:0,Microsoft.Win32.RegistryValueKind.DWord);if(Read(path)!=enabled)throw new System.IO.IOException("Windows could not update the controller shortcut.");}
- public static void Set(bool enabled){Write(Path,enabled);}
+ [DllImport("user32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern IntPtr SendMessageTimeout(IntPtr hwnd,uint message,UIntPtr wParam,string lParam,uint flags,uint timeout,out UIntPtr result);
+ public static void Set(bool enabled){
+  var before=ReadLocal();bool previous=Read(Path);
+  try{
+   RunHelper(enabled?"Enable":"Disable","");Write(Path,enabled);
+   UIntPtr result;SendMessageTimeout(new IntPtr(0xffff),0x1a,UIntPtr.Zero,Path,2,1000,out result);
+  }catch{
+   try{RunHelper("Restore"," -RestoreNexus "+(before.NexusExists?(before.Nexus?1:0):-1)+" -RestoreConnect "+(before.ConnectExists?(before.Connect?1:0):-1));Write(Path,previous);}catch(Exception rollback){Storage.Log(rollback.ToString());}
+   throw;
+  }
+ }
  public static void Test(){
+  RunHelper("Test","");
   string path=@"Software\SteamCouch\ControllerTest-"+System.Guid.NewGuid().ToString("N");
-  try{if(!Read(path))throw new System.Exception("Missing controller setting should use Windows' enabled default.");Write(path,false);if(Read(path))throw new System.Exception("Controller shortcut disable failed.");Write(path,true);if(!Read(path))throw new System.Exception("Controller shortcut restore failed.");System.IO.File.WriteAllText(Storage.PathOf("controller-test.txt"),"PASS: Windows default, disable, and enable verified using an isolated registry key.");}finally{Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(path,false);}
+  try{if(!Read(path))throw new System.Exception("Missing controller setting should use Windows' enabled default.");Write(path,false);if(Read(path))throw new System.Exception("Controller shortcut disable failed.");Write(path,true);if(!Read(path))throw new System.Exception("Controller shortcut restore failed.");System.IO.File.WriteAllText(Storage.PathOf("controller-test.txt"),"PASS: controller button and connection preferences tested in an isolated app-data container; Windows shortcut default, disable, and enable tested in an isolated registry key.");}finally{Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(path,false);}
  }
 }
 }

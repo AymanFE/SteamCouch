@@ -114,5 +114,8 @@ The Start with Windows switch applies immediately and launches into the system t
 ## Xbox mode
 Xbox mode requires a supported Windows 11 installation and the Xbox app. Enable Xbox mode under Windows Settings > Gaming first; confirm Win + F11 enters and exits it. SteamCouch uses that Windows shortcut and verifies the mode through Windows'' gaming-experience API. It checks that the Xbox window is full screen on the selected primary TV. Xbox mode may cover secondary screens even when SteamCouch keeps them connected. SteamCouch does not install feature enablers or change Windows'' Xbox-mode configuration. Win + F11 cannot also be used as SteamCouch''s shortcut for Xbox mode.
 
-## Controller Xbox button
-In Settings, enable **Disable Xbox button opening Game Bar** to prevent the controller's Xbox/Guide button opening both Steam's menu and Game Bar. The switch applies immediately to the current Windows user, including outside SteamCouch. Win + G remains available. Turn the switch off to restore the controller shortcut. SteamCouch reads the current Windows setting each time it starts.
+## Controller overlays
+
+In Settings, enable **Disable Game Bar & Controller Bar** to stop Windows overlays opening alongside Steam's menu when you press the controller's Xbox/Guide button. It also stops Controller Bar appearing when you connect a controller. The switch applies immediately for the current Windows user; Win + G still opens Game Bar. Turning the switch off enables the three controller triggers again.
+
+SteamCouch updates Windows' Game Bar shortcut and Game Bar's own Controller Bar preferences using the Windows app-data API, then notifies running components. It checks the current settings at startup. Keep `tools/windows/controller-overlays.ps1` with the app; it runs through Windows' included PowerShell without opening a console. Game Bar must be installed to manage its Controller Bar preferences. These app-specific preference names may change in future Game Bar versions.

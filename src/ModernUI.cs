@@ -206,13 +206,16 @@ public class MainForm : Form {
   timeout.Minimum=3;timeout.Maximum=120;timeout.Value=Math.Max(3,Math.Min(120,s.TimeoutSeconds));Theme.Place(advanced,timeout,590,198,114,36);timeout.Anchor=AnchorStyles.Right|AnchorStyles.Top;
   var seconds=Theme.Label("seconds",9,false,Theme.Muted);Theme.Place(advanced,seconds,716,207,68,24);seconds.Anchor=AnchorStyles.Right|AnchorStyles.Top;
   Theme.Place(content,controllerCard,32,408,808,80);
-  Theme.Place(controllerCard,Theme.Label("Disable Xbox button opening Game Bar",10,true,Theme.Text),24,16,680,28);
-  Theme.Place(controllerCard,Theme.Label("Applies across Windows. You can still open Game Bar with Win + G.",9,false,Theme.Muted),24,49,710,25);
-  Theme.Place(controllerCard,disableGameBar,738,22,46,28);disableGameBar.Anchor=AnchorStyles.Right|AnchorStyles.Top;disableGameBar.AccessibleName="Disable Xbox button opening Game Bar";disableGameBar.Checked=s.DisableControllerGameBar;
+  Theme.Place(controllerCard,Theme.Label("Disable Game Bar & Controller Bar",10,true,Theme.Text),24,16,680,28);
+  Theme.Place(controllerCard,Theme.Label("Stops Xbox button popups and Controller Bar on connection. Win + G still works.",9,false,Theme.Muted),24,49,710,25);
+  Theme.Place(controllerCard,disableGameBar,738,22,46,28);disableGameBar.Anchor=AnchorStyles.Right|AnchorStyles.Top;disableGameBar.AccessibleName="Disable Game Bar & Controller Bar";disableGameBar.Checked=s.DisableControllerGameBar;
   disableGameBar.CheckedChanged+=delegate{
    if(!layoutReady||uiTest)return;bool previous=settings.DisableControllerGameBar;
-   try{ControllerGameBar.Set(!disableGameBar.Checked);settings.DisableControllerGameBar=disableGameBar.Checked;Storage.Save("settings.json",settings);status.ForeColor=Theme.Green;status.Text=disableGameBar.Checked?"Xbox button no longer opens Game Bar. Win + G remains available.":"Xbox button can open Game Bar again.";}
-   catch(Exception error){layoutReady=false;disableGameBar.Checked=previous;layoutReady=true;settings.DisableControllerGameBar=previous;try{ControllerGameBar.Set(!previous);}catch{}ShowError(error);}
+   try{ControllerGameBar.Set(!disableGameBar.Checked);}
+   catch(Exception error){layoutReady=false;disableGameBar.Checked=previous;layoutReady=true;ShowError(error);return;}
+   settings.DisableControllerGameBar=disableGameBar.Checked;
+   try{Storage.Save("settings.json",settings);status.ForeColor=Theme.Green;status.Text=disableGameBar.Checked?"Windows controller overlays blocked. Win + G remains available.":"Windows controller overlays enabled again.";}
+   catch(Exception error){ShowError(error);}
   };
   DpiChanged+=delegate{BeginInvoke((Action)(()=>{LayoutCards();Invalidate(true);}));};
   launcher.SelectedIndexChanged+=delegate{launcherChanged();browse.Visible=((Choice)launcher.SelectedItem).Id=="Steam";xboxSettings.Visible=!browse.Visible;UpdateSummary();};launcherChanged();browse.Visible=s.Launcher!="Xbox";xboxSettings.Visible=!browse.Visible;
@@ -243,7 +246,7 @@ public class MainForm : Form {
    sidebar.Width=Theme.Px(this,212);footer.Height=Theme.Px(this,80);
    int topInset=centered?Math.Max(0,(header.Parent.ClientSize.Height-footer.Height-Theme.Px(this,496))/2):0;
    header.Height=Theme.Px(this,92)+topInset;
-   int w=Math.Max(Theme.Px(this,660),panel.ClientSize.Width-Math.Max(Theme.Px(this,17),SystemInformation.VerticalScrollBarWidth));content.Width=w;
+   int w=Math.Max(Theme.Px(this,660),panel.Width-Math.Max(Theme.Px(this,17),GetSystemMetricsForDpi(2,GetDpiForWindow(Handle)))-Theme.Px(this,2));content.Width=w;
    int cardWidth=centered?Math.Min(Theme.Px(this,880),w-2*unitMargin):w-2*unitMargin;
    int cardLeft=centered?(panel.ClientSize.Width-cardWidth)/2:unitMargin;
    Card[] cards={hero,overview,deviceCard,behavior,shortcut,advanced,controllerCard};int[] ys={8,190,8,250,8,156,408};int[] heights={166,198,232,134,130,240,80};
@@ -306,6 +309,7 @@ public class MainForm : Form {
  [DllImport("user32.dll")] static extern IntPtr GetWindowDpiAwarenessContext(IntPtr h);
  [DllImport("user32.dll")] static extern int GetAwarenessFromDpiAwarenessContext(IntPtr c);
  [DllImport("user32.dll")] static extern uint GetDpiForWindow(IntPtr h);
+ [DllImport("user32.dll")] static extern int GetSystemMetricsForDpi(int index,uint dpi);
  [StructLayout(LayoutKind.Sequential)] struct DpiRectangle {public int Left,Top,Right,Bottom;}
  void PreviewAtDpi(int dpi){
   Size=new Size((int)(1100*dpi/96.0),(int)(740*dpi/96.0));
