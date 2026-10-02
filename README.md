@@ -14,7 +14,7 @@ Steam stays running.
 
 **[Download the latest Windows release](https://github.com/AymanFE/SteamCouch/releases/latest)**
 
-Choose `SteamCouch-v1.7.1-setup-x64.exe` for installation, or `SteamCouch-v1.7.1-windows-x64.zip` for a portable copy. Both include CEC software. You do not need the
+Choose `SteamCouch-v1.8.0-setup-x64.exe` for installation, or `SteamCouch-v1.8.0-windows-x64.zip` for a portable copy. Both include CEC and Google TV software. You do not need the
 "Source code" downloads unless you want to build or modify the app.
 
 1. Run the installer, or extract the whole ZIP to a writable folder such as Documents.
@@ -176,7 +176,7 @@ Only newer stable releases from AymanFE/SteamCouch are considered. Downloads are
 
 Under **TV & audio**, optionally enable **Turn on TV & select HDMI automatically**. CEC software and its C++ runtime are included and selected automatically in both distributions. Choose the PC's HDMI input (HDMI 1 by default), a wake delay and save. SteamCouch sends power-on and active-source requests before changing Windows displays. Each saved display profile includes these preferences; the bundled software selection remains portable when you move the folder.
 
-A libCEC-compatible physical CEC interface is still required. Most GPU HDMI outputs lack CEC, so a compatible USB-CEC adapter is commonly needed. Enable CEC on your TV. Network control is not included because those protocols differ by TV system/manufacturer.
+A libCEC-compatible physical CEC interface is still required. Most GPU HDMI outputs lack CEC, so a compatible USB-CEC adapter is commonly needed. Enable CEC on your TV. For Google TV / Android TV, you can instead use the network option described below.
 
 **Test TV power & input** sends real commands without changing your Windows display layout. Check that your TV honors the request. **Set up adapter driver** launches the included official driver installer if needed and may require Windows permission. The installer has the same optional driver task. Neither distribution installs drivers automatically. Other CEC apps can occupy the adapter; close them if it is busy. Desktop return leaves the TV on.
 
@@ -184,8 +184,24 @@ For 4K/120 Hz, check adapter bandwidth before placing it in the video path. Puls
 
 ## Windows installer and portable build
 
-Use `SteamCouch-v1.7.1-setup-x64.exe` for a per-user installation, Start menu shortcut and uninstaller, or extract the portable ZIP and run SteamCouch.exe. Both contain the same CEC client, native library, app-local C++ runtime, driver installer, notices and corresponding native source. Windows 10 version 2004 or newer / Windows 11 supplies .NET Framework 4.8 and the Universal CRT. A separate .NET 8 installation is not needed.
+Use `SteamCouch-v1.8.0-setup-x64.exe` for a per-user installation, Start menu shortcut and uninstaller, or extract the portable ZIP and run SteamCouch.exe. Both contain the same CEC client, native library, app-local C++ runtime, driver installer, notices and corresponding native source. Windows 10 version 2004 or newer / Windows 11 supplies .NET Framework 4.8 and the Universal CRT. A separate .NET 8 installation is not needed.
 
 The installer preserves app data on upgrade/uninstall and blocks replacement while SteamCouch is running or a saved TV restore point is active. Return to desktop mode and exit the tray app before installing an upgrade.
 
-After running `package.ps1`, build the setup executable with `scripts/build-installer.ps1 -Compiler <path-to-ISCC.exe>` using Inno Setup 7. CEC vendor archive hashes are checked during every build. No compiler or development tools are needed by end users.
+After running `package.ps1`, build the setup executable with `scripts/build-installer.ps1 -Compiler <path-to-ISCC.exe>` using Inno Setup 7. CEC and ADB vendor archive hashes are checked during every build. No compiler or development tools are needed by end users.
+## Google TV / Android TV network control
+
+The setup wizard includes an optional TV power and HDMI step. Enter your own TV IPv4 address under **Set up Google TV**; it remains editable in **TV & audio**. This option is off by default and needs no CEC adapter. Google TV network control and CEC are alternatives; enabling one disables the other.
+
+1. Enable Developer options and USB/network debugging on your TV. Put the TV and PC on the same trusted home network.
+2. Enter its IP address (older network debugging normally uses port 5555). If Wireless debugging shows a connection port, enter IP:port.
+3. For Wireless debugging, choose **Pair with code** and enter the pairing address/port and six-digit code shown on the TV. The pairing port differs from the connection port. Then use **Connect / authorize** with the connection address, and allow this PC on the TV.
+4. Choose the PC's HDMI input, enable the network option and save. **Test TV power & input** sends real wake/input commands without changing Windows displays.
+
+ADB 37.0.1 and its native Windows dependencies/notices are included in both distributions. SteamCouch uses a separate local ADB server port (5039) and an app-specific key directory. Pairing codes are not saved. Display profiles retain these TV preferences.
+
+Activation sends wake (not a power toggle), waits, and selects HDMI before changing Windows displays. A connection/command failure stops activation and leaves your desktop unchanged. Returning to desktop leaves the TV on.
+
+Wake from standby requires the TV to keep its network/debugging service available, often using network standby or TCL's Screenless service. An optional MAC address sends a Wake-on-LAN packet if your TV supports it. A fully powered-off TV cannot be guaranteed to wake over the network. HDMI input key support varies by firmware; an optional Android passthrough input URI is available for models that ignore HDMI keys. SteamCouch cannot infer a model-specific URI reliably. Use only your own TV's input URI.
+
+Do not forward debugging ports to the internet. You can revoke this PC's authorization in the TV's Developer options.

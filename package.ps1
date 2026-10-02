@@ -1,4 +1,4 @@
-param([string]$Version = '1.7.1')
+param([string]$Version = '1.8.0')
 $ErrorActionPreference = 'Stop'
 if ($Version -notmatch '^\d+\.\d+\.\d+([-.][A-Za-z0-9.]+)?$') { throw 'Invalid release version.' }
 $stage = Join-Path $PSScriptRoot ('build\package-' + [guid]::NewGuid().ToString('N'))

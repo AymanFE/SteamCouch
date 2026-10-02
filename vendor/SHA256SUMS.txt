@@ -1,3 +1,4 @@
 9227764723f4b011f066a88b36b5a64bf81c9e3fa044356e877820319efe1c58  multimonitortool-x64.zip
 ee2c45553fb9fb31b71db88b537c18e25c1a387a4a9009d081bdb38265c68e1f  soundvolumeview-x64.zip
 a083281d9959a1e1c76518de97aeae87d91ea98b0572ea17722c516c921fd779  libcec-runtime-x64-8.1.7.zip
+eeffd599a1688dafea2af1c49d1e5cfe5ef727fc6847dc85ba3f1c4bd7fadc27  adb-runtime-win-37.0.1.zip

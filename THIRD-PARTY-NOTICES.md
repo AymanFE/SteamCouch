@@ -44,3 +44,14 @@ See `tools/cec/BUNDLED-NOTICES.txt`, `tools/cec/LICENSE.md` and the source
 archive for provenance, complete upstream notices and dependency details.
 .NET 8 bindings, Python/Node.js bindings, firmware flashers and firmware
 bootloader components are not required by SteamCouch and are not bundled.
+## Bundled Android Debug Bridge
+
+Both distributions include unmodified adb.exe, AdbWinApi.dll, AdbWinUsbApi.dll
+and libwinpthread-1.dll from Google's Windows Platform Tools 37.0.1.
+Only the required native ADB components are redistributed, with the complete
+upstream NOTICE.txt and provenance in tools/adb/BUNDLED-NOTICES.txt.
+These open source components keep their own Apache/BSD and other included
+notices; SteamCouch's MIT license does not relicense them.
+
+Official distribution: https://developer.android.com/tools/releases/platform-tools
+Android ADB source: https://android.googlesource.com/platform/packages/modules/adb/

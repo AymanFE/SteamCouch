@@ -14,6 +14,7 @@ using Microsoft.Win32;
 
 namespace TVLounge {
 public class Settings {
+ public bool GoogleTvEnabled=false;public string GoogleTvHost="",GoogleTvMac="",GoogleTvInputUri="";public int GoogleTvHdmiPort=1,GoogleTvWakeDelay=3;
  public bool CecEnabled=false;public string CecPath="";public int CecHdmiPort=1,CecWakeDelay=3;
  public string MonitorId = "";
  public string AudioId = "";
@@ -87,7 +88,7 @@ public class Devices : IDevices {
   return rows;
   } finally { if(File.Exists(file))File.Delete(file); }
  }
- public void WakeTv(Settings s){CecClient.Wake(s);}
+ public void WakeTv(Settings s){if(s.GoogleTvEnabled)GoogleTv.Wake(s);else CecClient.Wake(s);}
  public List<Row> Monitors() { return Read(display,"monitors.csv","/HideInactiveMonitors 0 /ShowDisconnectedMonitors 1"); }
  public List<Row> Audio() { return Read(audio,"audio.csv","/ShowUnpluggedDevices 1 /ShowDisabledDevices 1 /SaveFileEncoding 3").Where(r=>r.Get("Type")=="Device" && r.Get("Direction")=="Render").ToList(); }
  public void SaveDisplays(string file) { NativeDisplay.Save(file+".ccd.json"); Run(display,"/SaveConfig "+Quote(file)); if(!File.Exists(file)||new FileInfo(file).Length==0) throw new IOException("Could not save display restore point."); }
@@ -139,7 +140,7 @@ public class Engine {
   if(Active) throw new InvalidOperationException("Restore desktop first; a restore point is already present.");
   if(s.TimeoutSeconds<3 || s.TimeoutSeconds>120) throw new InvalidOperationException("Readiness timeout must be 3 to 120 seconds.");
   if(string.IsNullOrWhiteSpace(s.MonitorId))throw new InvalidOperationException("Choose your TV before enabling TV mode.");
-  if(s.CecEnabled){Status("Waking TV and selecting HDMI input...");d.WakeTv(s);}
+  if(s.CecEnabled||s.GoogleTvEnabled){Status("Waking TV and selecting HDMI input...");d.WakeTv(s);}
   var monitors=d.Monitors(); var target=monitors.SingleOrDefault(r=>Id(r)==s.MonitorId);
   if(target==null || string.IsNullOrEmpty(s.MonitorId)) throw new InvalidOperationException("Select an available TV in Settings. Check its cable and power.");
   if(!monitors.Any(IsOn)) throw new InvalidOperationException("No active desktop display detected.");
@@ -252,7 +253,7 @@ public static class Program {
    if(!created) { if(args.Contains("--tray"))return 0; MessageBox.Show("SteamCouch is already running. Open Settings from its system tray icon.","SteamCouch"); return 1; }
    try {
     if(args.Contains("--placement-test")){WindowPlacement.Test();return 0;}
-    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run();OptionalTests.Run();CecClient.Test(); return 0; }
+    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run();OptionalTests.Run();CecClient.Test();GoogleTv.Test(); return 0; }
     if(args.Contains("--ui-test")) { string oldData=Storage.Data; string preview=Path.Combine(oldData,"ui-preview"); Directory.CreateDirectory(preview); foreach(string name in new[]{"settings.json","restore.json"}) { string from=Path.Combine(oldData,name),to=Path.Combine(preview,name); if(File.Exists(from))File.Copy(from,to,true); else if(File.Exists(to))File.Delete(to); } Storage.Data=preview; }
     var d=new Devices();if(!args.Contains("--ui-test"))try{VideoSession.RecoverPending();}catch(Exception recovery){Storage.Log("Interrupted video change needs restore: "+recovery.Message);}
     if(args.Contains("--inventory-test")){Task.WaitAll(Enumerable.Range(0,6).Select(i=>Task.Run(()=>{if(d.Monitors().Count==0||d.Audio().Count==0)throw new Exception("Empty concurrent inventory");})).ToArray());File.WriteAllText(Storage.PathOf("inventory-test.txt"),"PASS: six concurrent display/audio inventories completed without file collisions.");return 0;}
@@ -292,8 +293,8 @@ public static class Program {
   }
  }
 }
-public class FakeDevices : IDevices {
- public void WakeTv(Settings s){Events.Add("cec-wake");}
+public class FakeDevices : IDevices { public bool FailTvWake;
+ public void WakeTv(Settings s){Events.Add(s.GoogleTvEnabled?"google-tv-wake":"cec-wake");if(FailTvWake)throw new Exception("TV wake failed");}
  public List<Row> Displays; public List<Row> Outputs; List<Row> original; public bool PlayniteOpen;public bool XboxOpen,FailXboxExit,FailXboxEnter,XboxUnavailable;public int XboxCalls; public bool FailAudio,FailRestore,NeedsReconnect,FailSteamExit,BigPictureOpen; public int SteamCalls,ExitCalls; public List<string> Events=new List<string>();
  public FakeDevices() {
   Displays=new List<Row>{new Row{{"Monitor ID","desk"},{"Name","desktop"},{"Active","Yes"},{"Primary","Yes"},{"Resolution","1920 X 1080"},{"Left-Top","0, 0"}},new Row{{"Monitor ID","tv"},{"Name","tv"},{"Monitor Name","Beyond TV"},{"Active","No"},{"Primary","No"}}};
@@ -323,6 +324,8 @@ public static class SelfTest {
     engine.Activate(s); Assert(engine.Active,"persistent recovery state"); Assert(Engine.IsOn(fake.Displays[0])==keep,"monitor checkbox"); Assert(fake.Displays[1].Get("Primary")=="Yes","TV primary"); Assert(Engine.Defaults(fake.Audio()).All(x=>x=="tv-audio"),"all audio roles");
     new Engine(fake).Restore(3); Assert(!engine.Active,"restart recovery clears marker"); Assert(Engine.IsOn(fake.Displays[0])&&!Engine.IsOn(fake.Displays[1]),"desktop restored"); Assert(Engine.Defaults(fake.Audio()).All(x=>x=="speakers"),"audio restored"); report.Add("PASS: "+(keep?"keep monitors":"TV only")+", audio switching, restart recovery");
    }
+   var networkTv=new FakeDevices();var networkEngine=new Engine(networkTv);networkEngine.Activate(new Settings{MonitorId="tv",LaunchSteam=false,GoogleTvEnabled=true,TimeoutSeconds=3});Assert(networkTv.Events.First()=="google-tv-wake","Google TV wakes before display changes");networkEngine.Restore(3);
+   var noNetworkTv=new FakeDevices{FailTvWake=true};var networkFailure=new Engine(noNetworkTv);bool networkThrew=false;try{networkFailure.Activate(new Settings{MonitorId="tv",LaunchSteam=false,GoogleTvEnabled=true,TimeoutSeconds=3});}catch{networkThrew=true;}Assert(networkThrew&&!networkFailure.Active&&noNetworkTv.Events.SequenceEqual(new[]{"google-tv-wake"})&&Engine.IsOn(noNetworkTv.Displays[0])&&!Engine.IsOn(noNetworkTv.Displays[1])&&Engine.Defaults(noNetworkTv.Audio()).All(x=>x=="speakers"),"Network TV failure leaves desktop unchanged");report.Add("PASS: Google TV wake ordering and no desktop changes on connection failure");
    var failing=new FakeDevices{FailAudio=true}; var failedEngine=new Engine(failing); bool threw=false;
    try{failedEngine.Activate(new Settings{MonitorId="tv",LaunchSteam=false,TimeoutSeconds=3});}catch{threw=true;}
    Assert(threw&&!failedEngine.Active&&!Engine.IsOn(failing.Displays[1]),"rollback on audio failure"); report.Add("PASS: activation failure rolls back");
