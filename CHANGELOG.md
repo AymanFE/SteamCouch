@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.9.1
+
+- Fix Google TV HDMI selection being overridden by an old saved TCL hardware input URI.
+- Discover HDMI inputs from the TV after wake-up and use the selected port, including in the setup wizard and display profiles.
+- Migrate old hardware input URIs to automatic selection in settings; keep explicit custom input overrides and explain them in the setup guide.
+
+Validation: regression suite, settings migration and UI/DPI checks; all four HDMI mappings verified against a TCL C6K without switching its input.
+
 ## 1.9.0
 
 - Choose Leave on, Disconnect, Turn off (DDC/CI), or Black screens for other monitors during TV mode.
