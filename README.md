@@ -14,7 +14,7 @@ Steam stays running.
 
 **[Download the latest Windows release](https://github.com/AymanFE/SteamCouch/releases/latest)**
 
-Choose `SteamCouch-v1.9.1-setup-x64.exe` for installation, or `SteamCouch-v1.9.1-windows-x64.zip` for a portable copy. Both include CEC and Google TV software. You do not need the
+Choose `SteamCouch-v1.9.2-setup-x64.exe` for installation, or `SteamCouch-v1.9.2-windows-x64.zip` for a portable copy. Both include CEC and Google TV software. You do not need the
 "Source code" downloads unless you want to build or modify the app.
 
 1. Run the installer, or extract the whole ZIP to a writable folder such as Documents.
@@ -184,7 +184,7 @@ For 4K/120 Hz, check adapter bandwidth before placing it in the video path. Puls
 
 ## Windows installer and portable build
 
-Use `SteamCouch-v1.9.1-setup-x64.exe` for a per-user installation, Start menu shortcut and uninstaller, or extract the portable ZIP and run SteamCouch.exe. Both contain the same CEC client, native library, app-local C++ runtime, driver installer, notices and corresponding native source. Windows 10 version 2004 or newer / Windows 11 supplies .NET Framework 4.8 and the Universal CRT. A separate .NET 8 installation is not needed.
+Use `SteamCouch-v1.9.2-setup-x64.exe` for a per-user installation, Start menu shortcut and uninstaller, or extract the portable ZIP and run SteamCouch.exe. Both contain the same CEC client, native library, app-local C++ runtime, driver installer, notices and corresponding native source. Windows 10 version 2004 or newer / Windows 11 supplies .NET Framework 4.8 and the Universal CRT. A separate .NET 8 installation is not needed.
 
 The installer preserves app data on upgrade/uninstall and blocks replacement while SteamCouch is running or a saved TV restore point is active. Return to desktop mode and exit the tray app before installing an upgrade.
 
@@ -200,7 +200,7 @@ The setup wizard includes an optional TV power and HDMI step. Enter your own TV 
 
 ADB 37.0.1 and its native Windows dependencies/notices are included in both distributions. SteamCouch uses a separate local ADB server port (5039) and an app-specific key directory. Pairing codes are not saved. Display profiles retain these TV preferences.
 
-Activation sends wake (not a power toggle), waits, and selects HDMI before changing Windows displays. A connection/command failure stops activation and leaves your desktop unchanged. Returning to desktop leaves the TV on unless the optional network-control standby setting is enabled.
+Activation sends wake (not a power toggle), waits, and selects HDMI before changing Windows displays. A connection/command failure stops activation and leaves your desktop unchanged. Returning to desktop leaves the TV on unless the optional network-control standby setting is enabled. When enabled, SteamCouch confirms the TV is awake and sends one short remote-style Power press after desktop restoration. Already-asleep TVs are left unchanged; unknown, changing or screensaver power states require using the remote. The app never retries the power toggle. This follows TCL Screenless standby rather than the separate Android Sleep path.
 
 Wake from standby requires the TV to keep its network/debugging service available, often using network standby or TCL's Screenless service. An optional MAC address sends a Wake-on-LAN packet if your TV supports it. A fully powered-off TV cannot be guaranteed to wake over the network. SteamCouch reads the TV's reported HDMI input mappings after wake-up, including TCL models, and switches to the selected port. Leave the advanced input URI blank for automatic selection. If mapping discovery is unavailable, it falls back to standard HDMI keys. Old saved hardware input URIs use the selected port instead of forcing their previous input. An explicit custom URI remains a fixed override.
 

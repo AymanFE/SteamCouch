@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.2
+
+- Use a guarded short remote-style Power press for Google TV standby instead of Android Sleep, which enters a different standby path on TCL C6K.
+- Leave already-asleep TVs unchanged; refuse unknown or changing power states and never retry a power toggle.
+
+Validation: regression tests cover awake/asleep/unknown/changing states and a lost response after Power. TCL logs confirm remote Power enters Screenless standby while Sleep enters normal standby. A full TV-mode-to-desktop test reached Screenless standby and the user confirmed the PC freezing/monitor blackout issue was resolved.
+
 ## 1.9.1
 
 - Fix Google TV HDMI selection being overridden by an old saved TCL hardware input URI.
