@@ -1,0 +1,21 @@
+using System;
+using System.Linq;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Windows.Forms;
+namespace TVLounge {
+internal sealed class GameFocus {
+ [DllImport("user32.dll")]internal static extern IntPtr GetForegroundWindow();[DllImport("user32.dll")]static extern bool IsWindow(IntPtr window);[DllImport("user32.dll")]static extern bool ShowWindow(IntPtr window,int command);[DllImport("user32.dll")]static extern bool IsIconic(IntPtr window);[DllImport("user32.dll")]static extern bool SetForegroundWindow(IntPtr window);
+ [StructLayout(LayoutKind.Sequential)]struct Rect {public int L,T,R,B;}
+ [DllImport("user32.dll")]static extern bool GetWindowRect(IntPtr window,out Rect rect);
+ static readonly int ownPid=System.Diagnostics.Process.GetCurrentProcess().Id;IntPtr lastWindow,inspectedWindow;int lastPid;long start;public int ObservedPid {get;private set;}public string ObservedDisplay {get;private set;}public string Name {get;private set;}public string ObservedName {get;private set;}
+ static readonly HashSet<string> excluded=new HashSet<string>(new[]{"explorer","steam","steamwebhelper","gameoverlayui","GameBar","GameBarFTServer","XboxPcApp","ApplicationFrameHost","chrome","msedge","firefox","Code","Codex","Playnite.FullscreenApp","Playnite.DesktopApp","dwm","ShellExperienceHost","SearchHost","Taskmgr","EpicGamesLauncher","EADesktop","EALauncher","GalaxyClient","RiotClientServices","upc","UbisoftConnect"},StringComparer.OrdinalIgnoreCase);
+ public void Observe(){var window=GetForegroundWindow();uint pid;Native.GetWindowThreadProcessId(window,out pid);if(pid==0||pid==ownPid)return;if(window==inspectedWindow&&ObservedPid==(int)pid){ObservedDisplay=Screen.FromHandle(window).DeviceName;return;}inspectedWindow=window;try{using(var p=Process.GetProcessById((int)pid)){ObservedName=p.ProcessName;ObservedPid=(int)pid;ObservedDisplay=Screen.FromHandle(window).DeviceName;if(excluded.Contains(p.ProcessName))return;bool known=GameActivity.IsGame(pid);if(!known){try{string exe=p.MainModule.FileName;known=GameProfiles.Load().Any(profile=>string.Equals(profile.Executable,exe,StringComparison.OrdinalIgnoreCase));}catch{}}if(!known)return;lastWindow=window;lastPid=(int)pid;start=p.StartTime.ToUniversalTime().Ticks;Name=p.ProcessName;}}catch(InvalidOperationException){}catch(System.ComponentModel.Win32Exception){}}
+ public bool Return(Settings settings){if(Valid(lastWindow,lastPid,start)){if(IsIconic(lastWindow))ShowWindow(lastWindow,9);return Focus(lastWindow);}string[] names=settings.Launcher=="Playnite"?new[]{"Playnite.FullscreenApp","Playnite.DesktopApp"}:settings.Launcher=="Xbox"?new[]{"XboxPcApp","steam"}:new[]{"steam","steamwebhelper"};foreach(string name in names){var running=Process.GetProcessesByName(name);try{foreach(var p in running){if(p.MainWindowHandle!=IntPtr.Zero&&Native.IsWindowVisible(p.MainWindowHandle)){if(IsIconic(p.MainWindowHandle))ShowWindow(p.MainWindowHandle,9);if(Focus(p.MainWindowHandle))return true;}}}finally{foreach(var p in running)p.Dispose();}}return false;}
+  [DllImport("kernel32.dll")]static extern uint GetCurrentThreadId();[DllImport("user32.dll")]static extern bool AttachThreadInput(uint thread,uint other,bool attach);
+ static bool Focus(IntPtr window){if(SetForegroundWindow(window))return true;uint pid;uint other=Native.GetWindowThreadProcessId(GetForegroundWindow(),out pid),own=GetCurrentThreadId();bool attached=other!=0&&other!=own&&AttachThreadInput(own,other,true);try{return SetForegroundWindow(window);}finally{if(attached)AttachThreadInput(own,other,false);}}
+ internal static bool SameIdentity(int savedPid,long savedStart,int actualPid,long actualStart){return savedPid>0&&savedPid==actualPid&&savedStart==actualStart;}
+ static bool Valid(IntPtr window,int pid,long ticks){if(!IsWindow(window))return false;uint actual;Native.GetWindowThreadProcessId(window,out actual);try{using(var p=Process.GetProcessById((int)actual))return SameIdentity(pid,ticks,(int)actual,p.StartTime.ToUniversalTime().Ticks);}catch{return false;}}
+}
+}

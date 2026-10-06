@@ -14,7 +14,7 @@ using Microsoft.Win32;
 
 namespace TVLounge {
 public class Settings {
- public string OtherMonitorMode="";public bool GoogleTvPowerOff=false;public bool GoogleTvEnabled=false;public string GoogleTvHost="",GoogleTvMac="",GoogleTvInputUri="";public int GoogleTvHdmiPort=1,GoogleTvWakeDelay=3;
+ public bool PerformanceEnabled=false,PerformanceShortcut=false,BatteryMonitoring=false,BatteryPopup=true,BatterySound=false,BatteryVibration=false,ReturnGameEnabled=false,ReturnGameShortcut=false;public int PerformanceLevel=2,PerformanceCorner=1,PerformanceScale=100,PerformanceOpacity=85,PerformanceMetrics=511,PerformanceMask=0x4020,ReturnGameMask=0x1020;public string PerformanceDisplay="Auto"; public string OtherMonitorMode="";public bool GoogleTvPowerOff=false;public bool GoogleTvEnabled=false;public string GoogleTvHost="",GoogleTvMac="",GoogleTvInputUri="";public int GoogleTvHdmiPort=1,GoogleTvWakeDelay=3;
  public bool CecEnabled=false;public string CecPath="";public int CecHdmiPort=1,CecWakeDelay=3;
  public string MonitorId = "";
  public string AudioId = "";
@@ -254,13 +254,13 @@ public class Choice {
 }
 public static class Program {
  [STAThread] public static int Main(string[] args) {
-  if(args.Contains("--cec-fixture"))return CecClient.Fixture(args);
+  if(args.Contains("--performance-capture"))return PerformanceCapture.Helper(args);if(args.Contains("--gaming-tools-probe"))return GamingToolsTests.Probe();if(args.Contains("--cec-fixture"))return CecClient.Fixture(args);
   Application.EnableVisualStyles(); Application.SetCompatibleTextRenderingDefault(false);
   bool created; using(var mutex=new Mutex(true,(args.Contains("--ui-test")||args.Contains("--self-test")||args.Contains("--placement-test")||args.Contains("--steam-placement-test")||args.Contains("--inventory-test")||args.Contains("--monitor-power-check")?@"Local\SteamCouch.Preview":@"Local\TVLounge.SingleInstance"),out created)) {
    if(!created) { if(args.Contains("--tray"))return 0; MessageBox.Show("SteamCouch is already running. Open Settings from its system tray icon.","SteamCouch"); return 1; }
    try {
     if(args.Contains("--placement-test")){WindowPlacement.Test();return 0;}
-    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run();OptionalTests.Run();CecClient.Test();GoogleTv.Test();BlackScreens.Test(); return 0; }
+    if(args.Contains("--self-test")) { SelfTest.Run(); StartupRegistration.Test();ControllerGameBar.Test();FeatureTests.Run();UpdateTests.Run();QuickMenuTests.Run();OptionalTests.Run();GamingToolsTests.Run();CecClient.Test();GoogleTv.Test();BlackScreens.Test(); return 0; }
     if(args.Contains("--ui-test")) { string oldData=Storage.Data; string preview=Path.Combine(oldData,"ui-preview"); Directory.CreateDirectory(preview); foreach(string name in new[]{"settings.json","restore.json"}) { string from=Path.Combine(oldData,name),to=Path.Combine(preview,name); if(File.Exists(from))File.Copy(from,to,true); else if(File.Exists(to))File.Delete(to); } Storage.Data=preview; }
     var d=new Devices();if(!args.Contains("--ui-test"))try{VideoSession.RecoverPending();}catch(Exception recovery){Storage.Log("Interrupted video change needs restore: "+recovery.Message);}
     if(args.Contains("--inventory-test")){Task.WaitAll(Enumerable.Range(0,6).Select(i=>Task.Run(()=>{if(d.Monitors().Count==0||d.Audio().Count==0)throw new Exception("Empty concurrent inventory");})).ToArray());File.WriteAllText(Storage.PathOf("inventory-test.txt"),"PASS: six concurrent display/audio inventories completed without file collisions.");return 0;}

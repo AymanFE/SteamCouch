@@ -55,3 +55,19 @@ notices; SteamCouch's MIT license does not relicense them.
 
 Official distribution: https://developer.android.com/tools/releases/platform-tools
 Android ADB source: https://android.googlesource.com/platform/packages/modules/adb/
+
+## Controller and performance tools
+
+SDL 3.4.18 (zlib license) is bundled unchanged from the official Windows x64 release:
+https://github.com/libsdl-org/SDL/releases/tag/release-3.4.18
+Its LICENSE.txt is included in tools/controllers. SHA-256 of the original archive:
+75c2c0fc74e7d1206aaedc22893a35887332f4f85f5c8b74fddc10d177985f2c.
+
+PresentMon 2.6.0 is bundled unchanged from the official signed x64 console release:
+https://github.com/GameTechDev/PresentMon/releases/tag/v2.6.0
+Its MIT license and third-party notices are included in tools/performance. SHA-256:
+b2a706bc6ad475749e3b7e3409263aa1e6906d45bdcf993f6dbc0f660188f1af.
+SteamCouch communicates with this separate executable; no DLL is injected into games.
+
+NVIDIA NVML is loaded from the user's installed NVIDIA driver when available.
+SteamCouch does not redistribute NVML or install a GPU monitoring driver.

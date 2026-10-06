@@ -1,4 +1,4 @@
-param([string]$Version='1.9.2',[string]$Compiler=(Join-Path $PSScriptRoot '..\build\inno\ISCC.exe'))
+param([string]$Version='1.10.0',[string]$Compiler=(Join-Path $PSScriptRoot '..\build\inno\ISCC.exe'))
 $ErrorActionPreference='Stop'
 if(!(Test-Path -LiteralPath $Compiler)){throw 'Install Inno Setup 7 and pass -Compiler with the path to ISCC.exe.'}
 $root=[IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))

@@ -1,12 +1,15 @@
-# SteamCouch 1.9.2 — TV standby fix
+# SteamCouch 1.10.0 — Performance, controller batteries and Return to game
 
-Fix PC freezing and monitor blackouts reported after SteamCouch put a TCL C6K into standby. TV logs showed the old Android Sleep command entered normal standby, while the remote entered Screenless standby. SteamCouch now uses a short remote-style Power press, and the user confirmed the issue was resolved in a full TV-mode-to-desktop test.
+Three optional gaming tools, available in desktop and TV mode. Each is off by default and can be enabled separately in Settings.
 
-- Check the TV power state before sending Power and leave already-asleep TVs unchanged.
-- Refuse unknown or changing power states and never retry a power toggle.
-- Keep TV standby optional and send it only after successful desktop restoration.
-- Update the in-app setup guide.
+- **Performance display:** levels 0–4, with FPS, a frame-time graph, CPU/GPU usage, supported temperatures and component power, clocks, RAM/VRAM and per-core CPU activity. Choose metrics, screen, corner, size and opacity; cycle levels from the quick menu or a controller shortcut.
+- **Controller batteries:** background readings plus separate low-battery popup, sound and vibration options. Read Windows battery reports independently of XInput's wired classification. The GameSir G7 Pro dongle now shows 100%, matching GameSir Nexus. Preserve Xbox charge categories and show unavailable when the driver supplies no valid data.
+- **Return to game:** refocus the last observed game or an already-open launcher from the quick menu, tray or configurable controller shortcut.
 
-Download the setup executable to install SteamCouch, or the ZIP for a portable copy. Both include the required TV-control libraries and retain the HDMI input fix from 1.9.1.
+The installer and portable ZIP include SDL and PresentMon. If Windows denies FPS collection, use Enable FPS capture in Settings to approve the separate helper; SteamCouch stays unelevated. Level 0 pauses capture, and disabling the feature closes the helper.
 
-Validation: regression tests cover awake/asleep/unknown/changing power states and a lost response after Power. Real TCL C6K logs confirmed the new standby path matches the remote; the full-session hardware test was confirmed successful by the user. Behavior on other TV models still depends on their firmware.
+Use borderless/windowed games for the performance display; exclusive fullscreen can cover it. NVIDIA sensors use the installed driver. CPU temperature/power and unsupported GPU sensors remain unavailable. Component power is not total PC power. Battery availability depends on the device and driver; ambiguous identical-controller matches retain the standard reading.
+
+Validation: regression checks cover frame parsing, stale readings, battery capacities and charging, low-battery alert cooldown, controller matching, process identity, shortcut conflicts and settings persistence. UI scaling and HUD input/focus checks passed. Installer deployment, reinstall and uninstall checks passed. GameSir battery was verified on the connected controller against Nexus. Live elevated gameplay FPS and Return to game across all game titles have not been exhaustively tested.
+
+Download the setup executable to install SteamCouch, or extract the whole ZIP for a portable copy. Existing settings are preserved. The Google TV standby fix from 1.9.2 is retained.

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.10.0
+
+- Add an optional performance display with levels 0–4, frame-time graph, CPU/GPU usage, temperature, component power, GPU clocks, RAM/VRAM and per-core CPU activity where available.
+- Choose display, corner, size, opacity and individual metrics. Cycle levels in the TV quick menu or with a configurable controller shortcut, including at your desk.
+- Bundle PresentMon 2.6.0 and SDL 3.4.18 in installer and portable builds. FPS capture uses a separate permission helper when Windows requires it; turning the display off pauses collection, and the helper exits with SteamCouch.
+- Add optional background controller battery monitoring, quick-menu/tray readings and separate low-battery popup, sound and vibration settings. Show actual percentages, qualitative Xbox charge levels, or unavailable readings without guesses.
+- Filter a controller dongle's extra keyboard, media and vendor HID interfaces instead of listing them as controllers.
+- Add optional Return to game through the quick menu, tray or configurable controller shortcut. Validate window/process identity and fall back to an open launcher when the game has closed.
+
+Read Windows controller battery reports independently of XInput: the GameSir G7 Pro dongle now reports 100%, confirmed against GameSir Nexus. Missing/invalid capacities and ambiguous identical-controller matches retain the standard reading. Hardware limits: low-battery alerts require a real reading from the driver. Current GPU sensor coverage uses NVIDIA's installed NVML library; unsupported sensors, including CPU temperature and CPU watts, remain explicitly unavailable. The overlay is designed for windowed/borderless games and does not inject into games.
+
 ## 1.9.2
 
 - Use a guarded short remote-style Power press for Google TV standby instead of Android Sleep, which enters a different standby path on TCL C6K.
