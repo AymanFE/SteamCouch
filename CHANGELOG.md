@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.10.1
+
+- Add a clear Enable / Disable performance display action to the tray menu.
+- Disabling immediately closes the HUD and capture helper, saves the preference and updates the Settings switch. Re-enabling restores the selected level.
+- Verify both tray actions persist their state and document the Settings and level-zero alternatives.
+
 ## 1.10.0
 
 - Add an optional performance display with levels 0–4, frame-time graph, CPU/GPU usage, temperature, component power, GPU clocks, RAM/VRAM and per-core CPU activity where available.

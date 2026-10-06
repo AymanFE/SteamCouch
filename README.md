@@ -14,7 +14,7 @@ Steam stays running.
 
 **[Download the latest Windows release](https://github.com/AymanFE/SteamCouch/releases/latest)**
 
-Choose `SteamCouch-v1.10.0-setup-x64.exe` for installation, or `SteamCouch-v1.10.0-windows-x64.zip` for a portable copy. Both include CEC and Google TV software. You do not need the
+Choose `SteamCouch-v1.10.1-setup-x64.exe` for installation, or `SteamCouch-v1.10.1-windows-x64.zip` for a portable copy. Both include CEC and Google TV software. You do not need the
 "Source code" downloads unless you want to build or modify the app.
 
 1. Run the installer, or extract the whole ZIP to a writable folder such as Documents.
@@ -184,7 +184,7 @@ For 4K/120 Hz, check adapter bandwidth before placing it in the video path. Puls
 
 ## Windows installer and portable build
 
-Use `SteamCouch-v1.10.0-setup-x64.exe` for a per-user installation, Start menu shortcut and uninstaller, or extract the portable ZIP and run SteamCouch.exe. Both contain the same CEC client, native library, app-local C++ runtime, driver installer, notices and corresponding native source. Windows 10 version 2004 or newer / Windows 11 supplies .NET Framework 4.8 and the Universal CRT. A separate .NET 8 installation is not needed.
+Use `SteamCouch-v1.10.1-setup-x64.exe` for a per-user installation, Start menu shortcut and uninstaller, or extract the portable ZIP and run SteamCouch.exe. Both contain the same CEC client, native library, app-local C++ runtime, driver installer, notices and corresponding native source. Windows 10 version 2004 or newer / Windows 11 supplies .NET Framework 4.8 and the Universal CRT. A separate .NET 8 installation is not needed.
 
 The installer preserves app data on upgrade/uninstall and blocks replacement while SteamCouch is running or a saved TV restore point is active. Return to desktop mode and exit the tray app before installing an upgrade.
 
@@ -226,6 +226,7 @@ The selected TV address is saved with that session. After the gaming launcher cl
 All three additions are off by default. Scroll down in Settings and save your choices.
 
 - **Performance display:** level 0 stops capture; level 1 shows application FPS; level 2 adds frame time and controller battery; level 3 adds hardware usage, temperatures and watts; level 4 adds clocks, memory and per-core CPU activity. Metrics can be hidden individually. Choose the focused app's screen, TV screen (active only in TV mode), or a specific connected screen, plus corner, size and opacity.
+- To disable the display immediately, right-click the SteamCouch tray icon and choose **Disable performance display**. To turn it off in Settings, switch off the toggle beside **Performance display** and click **Save settings**. Level **0 · Off** hides the HUD and pauses collection; disabling the feature also closes its capture helper.
 - If Windows denies FPS capture, click **Enable FPS capture**. Approve Windows permission for the separate capture helper; SteamCouch itself keeps running normally. Capture pauses at level 0 and resumes without another prompt during that app session. Disabling the feature or quitting closes the helper. FPS measures the chosen application's present events, not monitor refresh rate. It follows the busiest active swap chain and clears stale readings when the process stops rendering.
 - The HUD is click-through and does not take controller/keyboard focus. Use windowed or borderless fullscreen games; some exclusive fullscreen games will cover it. GPU readings are device-wide. NVIDIA sensors depend on the installed driver. CPU temperature/power and unsupported GPU sensors show unavailable. Component watts do not measure the whole PC's socket power.
 - **Controller battery monitoring:** runs in desktop and TV mode while SteamCouch is open. Xbox charge categories stay categories; native reported percentages remain percentages. Windows controller battery reports are checked independently of XInput, so the tested GameSir G7 Pro dongle now reports its percentage (100% matched GameSir Nexus). Drivers that expose no battery data show unavailable. If multiple identical models cannot be matched uniquely, the standard per-controller reading is kept rather than assigning the wrong battery. A wireless connection alone does not guarantee a battery API. Popups, sound and vibration are separate options. Alerts trigger at 20% or the low/empty category, with recharging and cooldown safeguards.

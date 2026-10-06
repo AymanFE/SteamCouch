@@ -1,15 +1,9 @@
-# SteamCouch 1.10.0 — Performance, controller batteries and Return to game
+# SteamCouch 1.10.1 — Easy performance display on/off
 
-Three optional gaming tools, available in desktop and TV mode. Each is off by default and can be enabled separately in Settings.
+Right-click the SteamCouch tray icon and choose **Disable performance display** to stop the HUD and its capture helper immediately. The preference stays off after restarting. Choose **Enable performance display** to turn it back on.
 
-- **Performance display:** levels 0–4, with FPS, a frame-time graph, CPU/GPU usage, supported temperatures and component power, clocks, RAM/VRAM and per-core CPU activity. Choose metrics, screen, corner, size and opacity; cycle levels from the quick menu or a controller shortcut.
-- **Controller batteries:** background readings plus separate low-battery popup, sound and vibration options. Read Windows battery reports independently of XInput's wired classification. The GameSir G7 Pro dongle now shows 100%, matching GameSir Nexus. Preserve Xbox charge categories and show unavailable when the driver supplies no valid data.
-- **Return to game:** refocus the last observed game or an already-open launcher from the quick menu, tray or configurable controller shortcut.
+The tray action also updates the Settings switch. You can still switch the feature off in Settings and save, or choose level 0 to hide the HUD and pause capture.
 
-The installer and portable ZIP include SDL and PresentMon. If Windows denies FPS collection, use Enable FPS capture in Settings to approve the separate helper; SteamCouch stays unelevated. Level 0 pauses capture, and disabling the feature closes the helper.
+Includes all gaming tools and the GameSir battery fix from 1.10.0. Existing preferences are preserved.
 
-Use borderless/windowed games for the performance display; exclusive fullscreen can cover it. NVIDIA sensors use the installed driver. CPU temperature/power and unsupported GPU sensors remain unavailable. Component power is not total PC power. Battery availability depends on the device and driver; ambiguous identical-controller matches retain the standard reading.
-
-Validation: regression checks cover frame parsing, stale readings, battery capacities and charging, low-battery alert cooldown, controller matching, process identity, shortcut conflicts and settings persistence. UI scaling and HUD input/focus checks passed. Installer deployment, reinstall and uninstall checks passed. GameSir battery was verified on the connected controller against Nexus. Live elevated gameplay FPS and Return to game across all game titles have not been exhaustively tested.
-
-Download the setup executable to install SteamCouch, or extract the whole ZIP for a portable copy. Existing settings are preserved. The Google TV standby fix from 1.9.2 is retained.
+Validation: regression tests and UI checks passed, including saving both tray toggle states and checking capture/HUD cleanup. Both installer and portable downloads include the required libraries.
