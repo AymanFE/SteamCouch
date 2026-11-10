@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.11.0
+
+- Add **Steam Dual Launcher (Clean / Modded)** as a gaming mode. SteamCouch auto-detects it from `%LOCALAPPDATA%\SteamDualLauncher\install.json`, so you don't need to pick a path. The option only appears once the launcher is detected.
+- In TV mode, SteamCouch prepares the TV and audio first, then opens the controller selector on the TV. Once you pick Clean or Modded, it places Big Picture on the TV as usual. Restore desktop exits Big Picture for whichever installation is running.
+- If you close the selector without choosing, TV mode rolls back and your desktop is restored. A missing launcher is rejected before any display or audio change.
+
+Validation: regression tests cover device ordering, restore-point persistence, missing-launcher rejection and no-choice rollback.
+
 ## 1.10.1
 
 - Add a clear Enable / Disable performance display action to the tray menu.

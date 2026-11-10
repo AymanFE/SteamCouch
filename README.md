@@ -48,6 +48,7 @@ provided alongside the ZIP.
 - Optionally apply per-game HDR/resolution/refresh profiles in TV mode, matching each game's full executable path.
 - Keep the other monitors on, or use only the TV.
 - Choose Steam Big Picture, Windows 11 Xbox mode, or Playnite fullscreen, with the selected TV made primary before launch.
+- **Steam Dual Launcher** support: if [Steam Dual Launcher](https://github.com/AymanFE/SteamDualLauncher) is installed, SteamCouch detects it automatically and offers **Steam Dual Launcher (Clean / Modded)** as a gaming mode. You then pick your Steam installation on the TV with the controller before Big Picture opens.
 - Exit the selected gaming mode before restoring desktop displays and audio.
 - Restore monitor positions, resolutions, refresh rates, primary display, and the three previous playback defaults.
 - Recover a saved desktop setup after restarting SteamCouch.
