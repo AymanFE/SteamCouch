@@ -1,9 +1,9 @@
-# SteamCouch 1.10.1 — Easy performance display on/off
+# SteamCouch 1.11.0: Steam Dual Launcher support
 
-Right-click the SteamCouch tray icon and choose **Disable performance display** to stop the HUD and its capture helper immediately. The preference stays off after restarting. Choose **Enable performance display** to turn it back on.
+If [Steam Dual Launcher](https://github.com/AymanFE/SteamDualLauncher) is installed, SteamCouch detects it automatically. A new gaming mode, **Steam Dual Launcher (Clean / Modded)**, then appears in Settings and in the setup wizard.
 
-The tray action also updates the Settings switch. You can still switch the feature off in Settings and save, or choose level 0 to hide the HUD and pause capture.
+In TV mode, SteamCouch switches the TV and audio first, then opens the controller picker on the TV. Choose Clean or Modded Steam, and Big Picture is placed on the TV as usual. **Restore desktop** exits Big Picture for whichever Steam installation is running. If you close the picker without choosing, TV mode is cancelled and your desktop is restored.
 
-Includes all gaming tools and the GameSir battery fix from 1.10.0. Existing preferences are preserved.
+Existing preferences are preserved. The new mode is used only when you select it.
 
-Validation: regression tests and UI checks passed, including saving both tray toggle states and checking capture/HUD cleanup. Both installer and portable downloads include the required libraries.
+Validation: the regression suite passed, including new Dual Launcher tests for device ordering, the restore point, rejection when the launcher is missing, and rollback when no installation is chosen.
